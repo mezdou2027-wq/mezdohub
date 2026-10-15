@@ -1,0 +1,8 @@
+{
+  "name": "MezdoHub",
+  "description": "المنصة العربية الشاملة للتوجيه المهني والأدوات الرقمية: توجيه مسارات LifeMap، حاسبات مالية، أدوات PDF، صانع السيرة الذاتية، وحلول العمل الحر والربح الرقمي.",
+  "entrypoint": "/index.html",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

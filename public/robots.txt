@@ -1,0 +1,21 @@
+# ==============================================================================
+# MEZDOHUB — PRODUCTION ROBOTS.TXT
+# Optimized for Googlebot & Mediapartners-Google (AdSense Crawler)
+# ==============================================================================
+
+User-agent: Mediapartners-Google
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+Disallow: /owner-crm
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: *
+Allow: /
+Disallow: /owner-crm
+
+# Authoritative XML Sitemap
+Sitemap: https://mezdohub.com/sitemap.xml

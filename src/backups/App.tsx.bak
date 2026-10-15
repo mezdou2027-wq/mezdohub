@@ -1,0 +1,74 @@
+// BACKUP: src/App.tsx
+// TIMESTAMP: 2026-10-05T04:37:30
+// PURPOSE: Phase 1 Authentication Implementation Pre-edit Backup
+
+import React, { useState } from 'react';
+import { useTheme } from './context/ThemeContext';
+import { Header } from './components/Header';
+import { Footer } from './components/Footer';
+import { MezdoHomePortal } from './components/MezdoHomePortal';
+import { LocalNicheJobsHub } from './components/LocalNicheJobsHub';
+import { MigrationHub } from './components/MigrationHub';
+import { FreelanceFinanceHub } from './components/FreelanceFinanceHub';
+import { MoroccanCvAndMotivationBuilder } from './components/MoroccanCvAndMotivationBuilder';
+import { LifeMapArab } from './components/LifeMapArab';
+import { OwnerAdminPortal } from './components/OwnerAdminPortal';
+import { LegalPoliciesModal } from './components/LegalPoliciesModal';
+import { LaunchPartnersHub } from './components/LaunchPartnersHub';
+import { DvLotteryHub } from './components/DvLotteryHub';
+import { trackPageView } from './services/analytics';
+
+export function App() {
+  const { isDarkMode } = useTheme();
+
+  const getInitialTab = () => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const urlTab = params.get('tab');
+      if (urlTab) return urlTab;
+    } catch {}
+    return 'home';
+  };
+
+  const [activeTab, setActiveTab] = useState<string>(getInitialTab);
+  const [legalSubTab, setLegalSubTab] = useState<'privacy' | 'terms' | 'disclaimer' | 'cookies'>('privacy');
+
+  const handleSelectTab = (tab: string, subLegal?: 'privacy' | 'terms' | 'disclaimer' | 'cookies') => {
+    if (subLegal) {
+      setLegalSubTab(subLegal);
+    }
+    setActiveTab(tab);
+    trackPageView(tab);
+    try {
+      const url = new URL(window.location.href);
+      if (tab === 'home') {
+        url.searchParams.delete('tab');
+      } else {
+        url.searchParams.set('tab', tab);
+      }
+      window.history.pushState({}, '', url.toString());
+    } catch {}
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col font-['Cairo',sans-serif] bg-[#FFFFFF] dark:bg-[#060a14] text-[#0F172A] dark:text-slate-100 antialiased selection:bg-blue-600 selection:text-white transition-colors duration-200">
+      <Header activeTab={activeTab} setActiveTab={(tab) => handleSelectTab(tab)} />
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+        {activeTab === 'home' && <MezdoHomePortal onSelectTab={(tab) => handleSelectTab(tab)} />}
+        {activeTab === 'local-jobs' && <LocalNicheJobsHub onSelectTab={(tab) => handleSelectTab(tab)} />}
+        {activeTab === 'migration' && <MigrationHub onBack={() => handleSelectTab('home')} />}
+        {activeTab === 'freelance-money' && <FreelanceFinanceHub onBack={() => handleSelectTab('home')} />}
+        {activeTab === 'cv-builder' && <MoroccanCvAndMotivationBuilder onSelectTab={(tab) => handleSelectTab(tab)} />}
+        {activeTab === 'lifemap-arab' && <LifeMapArab onSelectTab={(tab) => handleSelectTab(tab)} />}
+        {activeTab === 'partners' && <LaunchPartnersHub onBack={() => handleSelectTab('home')} />}
+        {activeTab === 'dv-lottery' && <DvLotteryHub onBack={() => handleSelectTab('home')} />}
+        {activeTab === 'owner-crm' && <OwnerAdminPortal />}
+        {activeTab === 'legal' && <LegalPoliciesModal initialTab={legalSubTab} onClose={() => handleSelectTab('home')} />}
+      </main>
+      <Footer onSelectTab={(tab) => handleSelectTab(tab)} onOpenLegal={(sub) => handleSelectTab(tab, sub)} />
+    </div>
+  );
+}
+
+export default App;

@@ -1,0 +1,4 @@
+# Google AdSense Publisher Verification File for MezdoHub
+# Domain: mezdohub.com
+# Reference: https://mezdohub.com/ads.txt
+google.com, pub-5171020875677806, DIRECT, f08c47fec0942fa0
