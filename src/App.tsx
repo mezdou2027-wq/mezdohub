@@ -1,3 +1,4 @@
+// Cloudflare deployment sync: 2026-10-15T14:21:47.716Z
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useTheme } from './context/ThemeContext';
 import { Header } from './components/Header';
