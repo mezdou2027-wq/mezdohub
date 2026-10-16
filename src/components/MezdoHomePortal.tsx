@@ -103,10 +103,10 @@ export const MezdoHomePortal: React.FC<MezdoHomePortalProps> = ({ onSelectTab, o
           {/* Actions: Blue Primary CTA #2563EB + Transparent Secondary Button */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
             <button
-              onClick={() => onSelectTab('lifemap-arab')}
+              onClick={() => onSelectTab('compass')}
               className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#2563EB] hover:bg-blue-700 text-white font-semibold text-sm shadow-xs cursor-pointer active:scale-98 transition-all flex items-center justify-center gap-2"
             >
-              <span>{isAr ? 'ابدأ الآن' : 'Commencer maintenant'}</span>
+              <span>{isAr ? 'افتح بوصلة الفرص واتخذ قرارك 🧭' : 'Ouvrir la Boussole MezdoHub 🧭'}</span>
               <ArrowIcon className="w-4 h-4" />
             </button>
 
@@ -150,6 +150,77 @@ export const MezdoHomePortal: React.FC<MezdoHomePortalProps> = ({ onSelectTab, o
           </div>
         </div>
 
+      </section>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          MEZDOHUB COMPASS: THE STRATEGIC DECISION ENGINE
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section className="max-w-5xl mx-auto space-y-6">
+        <div className="relative rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white p-6 sm:p-10 shadow-xl space-y-8">
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div className="space-y-3 max-w-2xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                <Compass className="w-4 h-4 text-amber-400" />
+                <span>{isAr ? "المنتج الجديد: MezdoHub Compass" : "Nouveau : MezdoHub Compass"}</span>
+              </div>
+              <h2 className="text-2xl sm:text-4xl font-black text-white leading-tight">
+                {isAr 
+                  ? "بوصلة الفرص الذكية: ما هو الطريق المناسب لحالتك؟ 🧭" 
+                  : "Boussole des Opportunités : Quelle voie pour votre avenir ?"}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
+                {isAr
+                  ? "توقف عن الحيرة بين الفيديوهات والمقالات المتضاربة. أجب عن 5 أسئلة صريحة عن سنك وشواهدك ولغاتك وميزانيتك، واحصل على أفضل 3 مسارات حقيقية مع نسبة النجاح والتكلفة وخطة تنفيذ أسبوعية."
+                  : "Ne perdez plus votre temps avec des conseils contradictoires. 5 questions concrètes pour découvrir vos 3 meilleures options réalistes avec plan d'action complet."}
+              </p>
+            </div>
+
+            <button
+              onClick={() => onSelectTab("compass")}
+              className="px-6 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm transition-all shadow-md flex items-center gap-2 cursor-pointer shrink-0"
+            >
+              <span>{isAr ? "بدء التشخيص مجاناً" : "Démarrer le diagnostic"}</span>
+              <ArrowIcon className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* The 5 Quick-Launch Compass Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-2">
+            {[
+              { id: "immigration", titleAr: "بوصلة الهجرة", titleFr: "Immigration", subAr: "ألمانيا، فرنسا، كندا", icon: Plane, badgeAr: "الأكثر طلباً" },
+              { id: "study", titleAr: "بوصلة الدراسة", titleFr: "Bourses & Études", subAr: "منح 100% وتكوين مأجور", icon: GraduationCap, badgeAr: "ممولة بالكامل" },
+              { id: "jobs", titleAr: "بوصلة العمل", titleFr: "Emploi 6 mois", subAr: "خطة وظيفة في 6 أشهر", icon: Briefcase, badgeAr: "سوق الشغل" },
+              { id: "shift", titleAr: "التحول المهني", titleFr: "Reconversion", subAr: "الخروج من الوظيفة للـ Tech", icon: Compass, badgeAr: "مضاعفة الدخل" },
+              { id: "side-hustle", titleAr: "الدخل الإضافي", titleFr: "Side Hustle", subAr: "أول 5,000 درهم شهرياً", icon: Coins, badgeAr: "بدون رأس مال" }
+            ].map(c => {
+              const IconComp = c.icon;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => onSelectTab("compass", c.id)}
+                  className="p-4 rounded-2xl bg-white/10 hover:bg-white/15 border border-white/10 text-right transition-all flex flex-col justify-between gap-3 cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <div className="p-2 rounded-xl bg-blue-500/20 text-blue-300 group-hover:scale-105 transition-transform">
+                      <IconComp className="w-4 h-4" />
+                    </div>
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-400/20 text-amber-300 border border-amber-400/30">
+                      {c.badgeAr}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm text-white group-hover:text-blue-300 transition-colors">
+                      {isAr ? c.titleAr : c.titleFr}
+                    </h3>
+                    <p className="text-[11px] text-slate-300 mt-0.5">
+                      {c.subAr}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </section>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

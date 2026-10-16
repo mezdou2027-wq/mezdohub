@@ -49,6 +49,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   const navItems = [
     { id: 'home', labelAr: 'الرئيسية', labelFr: 'Accueil', icon: Compass },
+    { id: 'compass', labelAr: 'بوصلة الفرص 🧭', labelFr: 'Boussole MezdoHub 🧭', icon: Compass },
     { id: 'dashboard', labelAr: 'حسابي ومفضلتي 🌟', labelFr: 'Mon Espace', icon: User },
     { id: 'content-hub', labelAr: 'المقالات والجمارك 📚', labelFr: 'Guides & Douane', icon: BookOpen },
     { id: 'ai-assistant', labelAr: 'المساعد الذكي 🤖', labelFr: 'Assistant IA', icon: Bot },

@@ -35,6 +35,7 @@ const AuthorEeatPage = lazy(() => import('./components/AuthorEeatPage').then(m =
 const AuthModal = lazy(() => import('./components/AuthModal').then(m => ({ default: m.AuthModal })));
 const LeadMagnetModal = lazy(() => import('./components/LeadMagnetModal').then(m => ({ default: m.LeadMagnetModal })));
 const WeeklyNewsletterModal = lazy(() => import('./components/WeeklyNewsletterModal').then(m => ({ default: m.WeeklyNewsletterModal })));
+const MezdoHubCompass = lazy(() => import('./components/MezdoHubCompass').then(m => ({ default: m.MezdoHubCompass })));
 
 import { resolveCurrentRoute, syncCleanUrl } from './services/router';
 
@@ -45,6 +46,7 @@ export interface HistoryEntry {
 }
 
 const TAB_TITLES: Record<string, { ar: string; fr: string }> = {
+  compass: { ar: 'بوصلة الفرص والقرار 🧭', fr: 'Boussole Stratégique 🧭' },
   home: { ar: 'الرئيسية', fr: 'Accueil' },
   dashboard: { ar: 'حسابي ومفضلتي 🌟', fr: 'Mon Espace' },
   'user-dashboard': { ar: 'حسابي ومفضلتي 🌟', fr: 'Mon Espace' },
@@ -282,6 +284,13 @@ export function App() {
 
         {/* 🚀 On-Demand Lazy Loaded Hubs Wrapped in Suspense */}
         <Suspense fallback={<FastTabLoader />}>
+          {/* 0. MezdoHub Compass Strategic Decision Engine */}
+          {activeTab === 'compass' && (
+            <MezdoHubCompass
+              initialType={(activeSubTab as any) || 'immigration'}
+              onNavigateToTab={handleSelectTab}
+            />
+          )}
           
           {/* 2. Global Migration & Country Pillars */}
           {activeTab === 'migration' && (

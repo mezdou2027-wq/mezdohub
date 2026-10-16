@@ -12,6 +12,13 @@ export interface RouteEntry {
 export const CLEAN_ROUTES: { path: string; tab: string; subTab?: string; id?: string; titleAr: string }[] = [
   // Homepage
   { path: '/', tab: 'home', titleAr: 'الرئيسية – منصة الفرص الدولية للمغاربة' },
+  // MezdoHub Compass Strategic Decision Engine (/compass/...)
+  { path: '/compass', tab: 'compass', titleAr: 'بوصلة الفرص والقرار – محرك القرار المغربي والعربي 2026' },
+  { path: '/compass/immigration', tab: 'compass', subTab: 'immigration', titleAr: 'بوصلة الهجرة الدولية – تقرير المسارات الأنسب' },
+  { path: '/compass/study', tab: 'compass', subTab: 'study', titleAr: 'بوصلة الدراسة والمنح بالخارج – الترشيحات الأكاديمية' },
+  { path: '/compass/jobs', tab: 'compass', subTab: 'jobs', titleAr: 'بوصلة التوظيف السريع – خطة الحصول على عمل' },
+  { path: '/compass/career-shift', tab: 'compass', subTab: 'shift', titleAr: 'بوصلة التحول المهني ومضاعفة الدخل' },
+  { path: '/compass/side-hustle', tab: 'compass', subTab: 'side-hustle', titleAr: 'بوصلة الدخل الإضافي والمشاريع المصغرة' },
 
   // Deep Knowledge Guides & Articles (/guide/...)
   { path: '/guide/morocco-customs', tab: 'content-hub', id: 'morocco-customs-aliexpress-temu-shein', titleAr: 'دليل الجمارك المغربية على طرود AliExpress و Temu و Shein 2026' },
