@@ -20,7 +20,8 @@ import {
   AlertCircle,
   Lightbulb,
   ExternalLink,
-  ShieldCheck
+  ShieldCheck,
+  Home
 } from 'lucide-react';
 import {
   CompassType,
@@ -45,7 +46,7 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
   initialType = 'immigration',
   onNavigateToTab
 }) => {
-  const { lang, isDarkMode } = useTheme();
+  const { lang } = useTheme();
   const isAr = lang === 'ar';
   const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
 
@@ -56,7 +57,23 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [shareToast, setShareToast] = useState<string | null>(null);
 
-  // Compass Config
+  // Sync when initialType prop changes from navigation
+  useEffect(() => {
+    if (initialType) {
+      setActiveCompass(initialType);
+      setCurrentStep(0);
+      setUserAnswers({});
+      setResult(null);
+      setIsSaved(false);
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
+  }, [initialType]);
+
+  // Always scroll to top when changing compass, step, or displaying results
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [currentStep, result, activeCompass]);
+
   const COMPASS_TABS = [
     {
       id: 'immigration' as CompassType,
@@ -119,6 +136,8 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
 
   const currentQuestions = getQuestionsForActiveCompass();
   const currentQ = currentQuestions[currentStep];
+  const activeTabConfig = COMPASS_TABS.find(t => t.id === activeCompass) || COMPASS_TABS[0];
+  const ActiveIcon = activeTabConfig.icon;
 
   useEffect(() => {
     trackPageView(`MezdoHub Compass - ${activeCompass}`);
@@ -130,20 +149,20 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
     setUserAnswers({});
     setResult(null);
     setIsSaved(false);
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   const handleSelectOption = (questionId: string, optionId: string) => {
     const updated = { ...userAnswers, [questionId]: optionId };
     setUserAnswers(updated);
 
-    // If next question exists, advance automatically or wait for button
     if (currentStep < currentQuestions.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
-      // Calculate final decision
       const computed = evaluateCompassResults(activeCompass, updated);
       setResult(computed);
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleReset = () => {
@@ -151,6 +170,7 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
     setUserAnswers({});
     setResult(null);
     setIsSaved(false);
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   const handleSaveToDashboard = () => {
@@ -184,72 +204,30 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
   };
 
   return (
-    <div className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12 animate-fade-in ${isAr ? 'text-right' : 'text-left'}`}>
+    <div className={`max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 animate-fade-in ${isAr ? 'text-right' : 'text-left'}`}>
       
-      {/* 1. HERO BANNER & MISSION STATEMENT */}
-      <section className="relative rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900 text-white shadow-xl">
-        <div className="absolute inset-0 z-0 opacity-35 mix-blend-luminosity">
-          <img
-            src="/src/assets/images/compass_decision_banner_1792136862472.jpg"
-            alt="MezdoHub Decision Compass"
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              // Graceful fallback container
-              e.currentTarget.style.display = 'none';
-            }}
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent z-10" />
+      {/* 1. COMPACT TOP HEADER WITH INSTANT COMPASS NAVIGATION */}
+      <header className="flex flex-col gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+        {/* Top Control Bar: Back to Home + Active Compass Tag */}
+        <div className="flex items-center justify-between gap-3">
+          <button
+            onClick={() => onNavigateToTab?.('home')}
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+          >
+            <Home className="w-3.5 h-3.5" />
+            <span>{isAr ? 'الرئيسية' : 'Accueil'}</span>
+            <span className="text-slate-300 dark:text-slate-700">/</span>
+            <span className="text-blue-600 dark:text-blue-400 font-bold">{isAr ? 'بوصلة الفرص' : 'Boussole'}</span>
+          </button>
 
-        <div className="relative z-20 px-6 sm:px-10 py-12 sm:py-16 max-w-3xl space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 border border-blue-400/30 text-xs font-semibold">
-            <Compass className="w-3.5 h-3.5" />
-            <span>{isAr ? 'محرك القرار المغربي والعربي الأول' : 'Moteur de Décision Stratégique 2026'}</span>
-          </div>
-
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
-            {isAr ? (
-              <>بوصلة الفرص الذكية: <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-amber-300">ما المسار الأنسب لحالتك؟</span></>
-            ) : (
-              <>Boussole Stratégique : <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-amber-300">Quelle voie choisir ?</span></>
-            )}
-          </h1>
-
-          <p className="text-slate-300 text-base sm:text-lg leading-relaxed font-normal">
-            {isAr
-              ? 'توقف عن إضاعة 50 ساعة في مشاهدة فيديوهات وتناقضات السوشيال ميديا. أجب عن 5 أسئلة صريحة عن سنك ودبلومك ولغاتك وميزانيتك، واحصل فوراً على أفضل 3 مسارات واقعية مع نسبة النجاح والتكلفة وخطة تنفيذ أسبوعية.'
-              : 'Évitez l\'indécision et les conseils contradictoires. Répondez à 5 questions concrètes sur votre âge, diplôme, langues et budget pour générer vos 3 meilleurs parcours réalistes.'}
-          </p>
-
-          <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-400 pt-2">
-            <span className="flex items-center gap-1.5 text-slate-200">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              {isAr ? 'مبني على قوانين التأشيرات الحقيقية 2026' : 'Conforme aux lois d\'immigration 2026'}
-            </span>
-            <span>·</span>
-            <span className="flex items-center gap-1.5 text-slate-200">
-              <ShieldCheck className="w-4 h-4 text-amber-400" />
-              {isAr ? 'تقييم واقعي بدون أوهام' : 'Évaluation objective'}
-            </span>
-            <span>·</span>
-            <span>{isAr ? 'مجاني 100% للشباب المغربي والعربي' : '100% Gratuit'}</span>
+          <div className="flex items-center gap-1.5 text-xs text-slate-500">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+            <span>{isAr ? 'تشخيص مباشر ومجاني 2026' : 'Diagnostic direct 2026'}</span>
           </div>
         </div>
-      </section>
 
-      {/* 2. THE 5 COMPASS SWITCHER TABS */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-blue-600" />
-            <span>{isAr ? 'اختر البوصلة التي تبحث عن قرار فيها:' : 'Choisissez votre domaine de décision :'}</span>
-          </h2>
-          <span className="text-xs text-slate-500 font-medium">
-            {isAr ? '5 محاور قرار رئيسية' : '5 axes décisionnels'}
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        {/* 5-Tabs Quick Horizontal Scroll Bar (Direct access to any compass) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
           {COMPASS_TABS.map(tab => {
             const isCurrent = activeCompass === tab.id;
             const Icon = tab.icon;
@@ -257,50 +235,57 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
               <button
                 key={tab.id}
                 onClick={() => handleSelectCompass(tab.id)}
-                className={`p-4 rounded-2xl border text-right transition-all flex flex-col justify-between gap-3 cursor-pointer ${
+                className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 transition-all flex items-center gap-2 cursor-pointer ${
                   isCurrent
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-500/20'
-                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-blue-300 dark:hover:border-blue-700'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700'
                 }`}
               >
-                <div className="flex items-center justify-between w-full">
-                  <div className={`p-2 rounded-xl ${isCurrent ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800 text-blue-600'}`}>
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                    isCurrent ? 'bg-white text-blue-800' : 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400'
-                  }`}>
-                    {tab.badgeAr}
-                  </span>
-                </div>
-                <div>
-                  <h3 className={`font-bold text-sm ${isCurrent ? 'text-white' : 'text-slate-900 dark:text-white'}`}>
-                    {isAr ? tab.labelAr : tab.labelFr}
-                  </h3>
-                  <p className={`text-[11px] mt-1 ${isCurrent ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'}`}>
-                    {tab.subAr}
-                  </p>
-                </div>
+                <Icon className="w-3.5 h-3.5" />
+                <span>{isAr ? tab.labelAr : tab.labelFr}</span>
               </button>
             );
           })}
         </div>
-      </section>
+      </header>
 
-      {/* 3. QUESTIONNAIRE WIZARD OR FINAL RESULT */}
+      {/* 2. DIRECT QUESTIONNAIRE ENTRY (Right at the top of the screen - ZERO scroll required!) */}
       {!result ? (
-        <section className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-10 shadow-sm space-y-8">
-          {/* Progress Header */}
-          <div className="space-y-3 border-b border-slate-100 dark:border-slate-800 pb-6">
+        <main className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 sm:p-8 shadow-sm space-y-6">
+          
+          {/* Active Compass Header Title Banner */}
+          <div className="flex items-center justify-between gap-4 bg-slate-50 dark:bg-slate-850 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <ActiveIcon className="w-5 h-5" />
+              </div>
+              <div>
+                <h1 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                  {isAr ? activeTabConfig.labelAr : activeTabConfig.labelFr}
+                </h1>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {isAr ? activeTabConfig.subAr : ''}
+                </p>
+              </div>
+            </div>
+
+            <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900 px-2.5 py-1 rounded-lg shrink-0">
+              {isAr ? activeTabConfig.badgeAr : ''}
+            </span>
+          </div>
+
+          {/* Progress Indicator */}
+          <div className="space-y-2">
             <div className="flex items-center justify-between text-xs font-semibold text-slate-500 dark:text-slate-400">
-              <span>
+              <span className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
+                <Sparkles className="w-3.5 h-3.5 text-blue-500" />
                 {isAr ? `السؤال ${currentStep + 1} من ${currentQuestions.length}` : `Question ${currentStep + 1} sur ${currentQuestions.length}`}
               </span>
-              <span className="font-mono tabular-nums">
+              <span className="font-mono tabular-nums font-bold text-blue-600 dark:text-blue-400">
                 {Math.round(((currentStep + 1) / currentQuestions.length) * 100)}%
               </span>
             </div>
-            {/* Progress bar */}
+            {/* Smooth Progress Bar */}
             <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
               <div
                 className="bg-blue-600 h-full rounded-full transition-all duration-300"
@@ -309,29 +294,29 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
             </div>
           </div>
 
-          {/* Current Question Block */}
+          {/* Current Question & Options */}
           {currentQ && (
-            <div className="space-y-6">
-              <div className="space-y-2">
-                <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+            <div className="space-y-6 pt-2">
+              <div className="space-y-1.5">
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-snug">
                   {isAr ? currentQ.titleAr : currentQ.titleFr}
-                </h3>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
                   {isAr ? currentQ.descriptionAr : currentQ.descriptionFr}
                 </p>
               </div>
 
-              {/* Options Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-2">
+              {/* Touch-Friendly Options Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {currentQ.options.map(option => {
                   const isSelected = userAnswers[currentQ.id] === option.id;
                   return (
                     <button
                       key={option.id}
                       onClick={() => handleSelectOption(currentQ.id, option.id)}
-                      className={`p-5 rounded-2xl border text-right transition-all flex items-start justify-between gap-4 cursor-pointer group ${
+                      className={`p-4 sm:p-5 rounded-2xl border text-right transition-all flex items-start justify-between gap-3 cursor-pointer group active:scale-[0.99] ${
                         isSelected
-                          ? 'border-blue-600 bg-blue-50/70 dark:bg-blue-950/40 shadow-xs'
+                          ? 'border-blue-600 bg-blue-50/80 dark:bg-blue-950/40 shadow-xs ring-1 ring-blue-500/20'
                           : 'border-slate-200 dark:border-slate-800 hover:border-blue-400 dark:hover:border-blue-600 bg-slate-50/50 dark:bg-slate-850/50'
                       }`}
                     >
@@ -345,7 +330,7 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
                           </span>
                         )}
                       </div>
-                      <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                      <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
                         isSelected
                           ? 'border-blue-600 bg-blue-600 text-white'
                           : 'border-slate-300 dark:border-slate-600 group-hover:border-blue-400'
@@ -357,8 +342,8 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
                 })}
               </div>
 
-              {/* Nav Buttons */}
-              <div className="flex items-center justify-between pt-6 border-t border-slate-100 dark:border-slate-800">
+              {/* Nav Step Controls */}
+              <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800">
                 <button
                   onClick={() => setCurrentStep(prev => Math.max(0, prev - 1))}
                   disabled={currentStep === 0}
@@ -367,32 +352,32 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
                   {isAr ? '← السؤال السابق' : '← Question précédente'}
                 </button>
                 <span className="text-xs text-slate-400">
-                  {isAr ? 'اضغط على الخيار للانتقال فوراً' : 'Sélectionnez une option pour continuer'}
+                  {isAr ? 'اضغط على الخيار للانتقال فوراً للسؤال التالي' : 'Sélectionnez une option pour continuer'}
                 </span>
               </div>
             </div>
           )}
-        </section>
+        </main>
       ) : (
-        /* 4. THE DECISION REPORT (RESULTS VIEW) */
-        <section className="space-y-8 animate-fade-in" id="printable-report">
+        /* 3. THE DECISION REPORT (RESULTS VIEW AT TOP) */
+        <main className="space-y-6 animate-fade-in" id="printable-report">
           {/* Header Action Bar */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-sm">
             <div className="space-y-2">
               <div className="inline-flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 className="w-4 h-4" />
-                <span>{isAr ? 'تم استخراج أفضل 3 مسارات متوافقة مع ملفك' : '3 parcours optimaux identifiés'}</span>
+                <span>{isAr ? 'تم استخراج أفضل 3 مسارات مناسبة لحالتك' : '3 parcours optimaux identifiés'}</span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                {isAr ? 'خارطة طريقك وقرارك الاستراتيجي' : 'Votre Rapport Décisionnel Stratégique'}
+                {isAr ? 'خارطة طريقك وقرارك النهائي' : 'Votre Rapport Décisionnel Stratégique'}
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                {isAr ? `تاريخ التقييم: ${new Date().toLocaleDateString('ar-MA')}` : `Évalué le : ${new Date().toLocaleDateString('fr-FR')}`}
+                {isAr ? `تاريخ التشخيص: ${new Date().toLocaleDateString('ar-MA')}` : `Évalué le : ${new Date().toLocaleDateString('fr-FR')}`}
               </p>
             </div>
 
             {/* Print & Share Controls */}
-            <div className="flex flex-wrap items-center gap-2.5 shrink-0 print:hidden">
+            <div className="flex flex-wrap items-center gap-2 shrink-0 print:hidden">
               <button
                 onClick={handlePrint}
                 className="px-3.5 py-2 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
@@ -418,7 +403,7 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
                 }`}
               >
                 <BookmarkCheck className="w-3.5 h-3.5" />
-                <span>{isSaved ? (isAr ? 'تم الحفظ في لوحتك!' : 'Enregistré !') : (isAr ? 'حفظ في حسابي' : 'Sauvegarder')}</span>
+                <span>{isSaved ? (isAr ? 'تم الحفظ في حسابك!' : 'Enregistré !') : (isAr ? 'حفظ في حسابي' : 'Sauvegarder')}</span>
               </button>
 
               <button
@@ -438,12 +423,12 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
           )}
 
           {/* Strategic Executive Summary Card */}
-          <div className="bg-gradient-to-r from-blue-900/10 via-amber-500/10 to-transparent border border-blue-200 dark:border-blue-900/50 rounded-3xl p-6 sm:p-8 space-y-3">
+          <div className="bg-gradient-to-r from-blue-900/10 via-amber-500/10 to-transparent border border-blue-200 dark:border-blue-900/50 rounded-3xl p-6 space-y-2">
             <div className="flex items-center gap-2 text-blue-700 dark:text-blue-300 font-bold text-sm">
               <Lightbulb className="w-4 h-4" />
               <span>{isAr ? 'الخلاصة التنفيذية لحالتك:' : 'Synthèse Stratégique :'}</span>
             </div>
-            <p className="text-slate-800 dark:text-slate-200 text-base leading-relaxed">
+            <p className="text-slate-800 dark:text-slate-200 text-sm sm:text-base leading-relaxed">
               {isAr ? result.primarySummaryAr : result.primarySummaryFr}
             </p>
           </div>
@@ -459,7 +444,7 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
                     : 'border-slate-200 dark:border-slate-800'
                 }`}
               >
-                {/* Pathway Top Header */}
+                {/* Pathway Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-5">
                   <div className="flex items-center gap-3">
                     <span className="w-9 h-9 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white font-mono font-black text-sm flex items-center justify-center border border-slate-200 dark:border-slate-700">
@@ -532,7 +517,7 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
                   <h4 className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
                     {isAr ? '🔍 لماذا هذا المسار مناسب لحالتك بالذات؟' : 'Pourquoi ce choix est adapté à votre profil ?'}
                   </h4>
-                  <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed bg-blue-50/40 dark:bg-slate-850/40 p-4 rounded-xl border border-blue-100/50 dark:border-slate-800">
+                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed bg-blue-50/40 dark:bg-slate-850/40 p-4 rounded-xl border border-blue-100/50 dark:border-slate-800">
                     {isAr ? pathway.whyThisPathAr : pathway.whyThisPathFr}
                   </p>
                 </div>
@@ -607,32 +592,32 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
             ))}
           </div>
 
-          {/* Bottom Callout & Next Steps */}
-          <div className="bg-slate-900 text-white rounded-3xl p-8 sm:p-10 space-y-6 text-center max-w-3xl mx-auto shadow-lg">
-            <h3 className="text-2xl sm:text-3xl font-black">
-              {isAr ? 'جاهز لتحويل هذا القرار إلى واقع ملموس؟' : 'Prêt à concrétiser votre choix ?'}
+          {/* Bottom Actions */}
+          <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 space-y-4 text-center max-w-2xl mx-auto shadow-sm">
+            <h3 className="text-xl sm:text-2xl font-black">
+              {isAr ? 'جاهز لبدء الخطوة الأولى الآن؟' : 'Prêt à démarrer l\'étape 1 ?'}
             </h3>
-            <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
+            <p className="text-slate-300 text-xs sm:text-sm leading-relaxed">
               {isAr
-                ? 'القرار هو 20% فقط، والتنفيذ المنظم هو 80% الباقية. احفظ خطتك، وابدأ أول مرحلة اليوم عبر صانع السيرة الذاتية أو الأدلة المرجعية في MezdoHub.'
-                : 'La décision représente 20% du chemin, l\'exécution 80%. Enregistrez votre plan et démarrez dès aujourd\'hui.'}
+                ? 'ابدأ اليوم بتجهيز سيرتك الذاتية المتوافقة مع أنظمة ATS لتكون مستعداً للتقديم على هذا المسار.'
+                : 'Commencez par générer votre CV professionnel aux normes ATS.'}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
               <button
                 onClick={() => onNavigateToTab?.('cv-builder')}
-                className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all shadow-md cursor-pointer"
+                className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold transition-all cursor-pointer"
               >
-                {isAr ? 'تجهيز السيرة الذاتية المهنية (ATS Pro)' : 'Créer mon CV ATS Pro'}
+                {isAr ? 'صانع السيرة الذاتية (CV ATS)' : 'Créer mon CV ATS Pro'}
               </button>
               <button
-                onClick={() => onNavigateToTab?.('content-hub')}
-                className="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all border border-slate-700 cursor-pointer"
+                onClick={handleReset}
+                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all border border-slate-700 cursor-pointer"
               >
-                {isAr ? 'تصفح المقالات والأدلة المفصلة' : 'Explorer les guides détaillés'}
+                {isAr ? 'تجربة بوصلة أخرى 🧭' : 'Tester une autre boussole'}
               </button>
             </div>
           </div>
-        </section>
+        </main>
       )}
     </div>
   );
