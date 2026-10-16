@@ -1,1 +1,3 @@
-/*    /index.html   200
+# Cloudflare Redirects Configuration
+# SPA routing is handled by wrangler.json (not_found_handling: "single-page-application")
+# Static files (/ads.txt, /robots.txt, /sitemap.xml) are served directly with HTTP 200.
