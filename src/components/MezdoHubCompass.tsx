@@ -21,7 +21,13 @@ import {
   Lightbulb,
   ExternalLink,
   ShieldCheck,
-  Home
+  Home,
+  Check,
+  Target,
+  Zap,
+  TrendingUp,
+  MapPin,
+  ChevronLeft
 } from 'lucide-react';
 import {
   CompassType,
@@ -37,86 +43,148 @@ import {
 } from '../data/compassEngine';
 import { trackPageView } from '../services/analytics';
 
-interface MezdoHubCompassProps {
+export interface MezdoHubCompassProps {
   initialType?: CompassType;
+  subTab?: string;
   onNavigateToTab?: (tab: string, subTab?: string, id?: string) => void;
 }
 
 export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
-  initialType = 'immigration',
+  initialType,
+  subTab,
   onNavigateToTab
 }) => {
   const { lang } = useTheme();
   const isAr = lang === 'ar';
   const ArrowIcon = isAr ? ArrowLeft : ArrowRight;
 
-  const [activeCompass, setActiveCompass] = useState<CompassType>(initialType);
+  // Resolve active compass type from subTab or initialType
+  const resolveCompassType = (val?: string): CompassType | null => {
+    if (!val || val === 'gateway') return null;
+    if (val === 'immigration') return 'immigration';
+    if (val === 'study') return 'study';
+    if (val === 'jobs' || val === 'job') return 'jobs';
+    if (val === 'shift' || val === 'career-shift') return 'shift';
+    if (val === 'side-hustle' || val === 'side-income') return 'side-hustle';
+    return 'immigration';
+  };
+
+  const activeCompass = resolveCompassType(subTab || (initialType ? initialType : undefined));
+
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<CompassResult | null>(null);
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [shareToast, setShareToast] = useState<string | null>(null);
 
-  // Sync when initialType prop changes from navigation
+  // Reset questionnaire state when activeCompass changes (e.g. user navigated to another compass URL)
   useEffect(() => {
-    if (initialType) {
-      setActiveCompass(initialType);
-      setCurrentStep(0);
-      setUserAnswers({});
-      setResult(null);
-      setIsSaved(false);
-      window.scrollTo({ top: 0, behavior: 'instant' });
+    setCurrentStep(0);
+    setUserAnswers({});
+    setResult(null);
+    setIsSaved(false);
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    if (activeCompass) {
+      trackPageView(`MezdoHub Compass - ${activeCompass}`);
+    } else {
+      trackPageView('MezdoHub Compass - Gateway Portal');
     }
-  }, [initialType]);
+  }, [activeCompass]);
 
-  // Always scroll to top when changing compass, step, or displaying results
+  // Keep window scrolled to top on step changes or result generation
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [currentStep, result, activeCompass]);
+  }, [currentStep, result]);
 
-  const COMPASS_TABS = [
+  const COMPASS_CONFIGS = [
     {
       id: 'immigration' as CompassType,
-      labelAr: 'بوصلة الهجرة الدولية',
-      labelFr: 'Boussole Immigration',
-      subAr: 'ألمانيا، فرنسا، كندا أو العمل الحر',
+      pathSub: 'immigration',
+      titleAr: 'بوصلة الهجرة الدولية',
+      titleFr: 'Boussole Immigration',
+      headlineAr: 'أين وكيف أهاجر قانونياً حسب وضعي؟',
+      headlineFr: 'Où et comment immigrer légalement selon mon profil ?',
+      badgeAr: 'الأكثر طلباً 🔥',
+      badgeColor: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-800',
+      descriptionAr: 'تحليل دقيق لسنك، شواهدك، سنوات خبرتك، لغاتك وقدرتك المالية لاقتراح أفضل 3 مسارات قانونية (ألمانيا، كندا، فرنسا، إسبانيا، أو العمل الحر).',
+      descriptionFr: 'Diagnostic selon votre âge, diplômes, expérience, langues et budget pour 3 parcours optimaux (Allemagne, Canada, France, Espagne, Freelance).',
+      inputsAr: ['العمر والشواهد', 'سنوات الخبرة', 'اللغات الأجنبية', 'القدرة المالية الأولية'],
+      outputsAr: ['أفضل 3 دول مناسبة', 'نسبة الملاءمة الدقيقة', 'التكاليف التقديرية بالدرهم', 'خطة تنفيذ من 3 مراحل'],
       icon: Plane,
-      badgeAr: 'الأكثر طلباً'
+      timeEstimate: '3 دقائق',
+      questionsCount: IMMIGRATION_QUESTIONS.length
     },
     {
       id: 'study' as CompassType,
-      labelAr: 'بوصلة الدراسة والمنح',
-      labelFr: 'Boussole Études & Bourses',
-      subAr: 'منح 100% وتكوين مأجور بالخارج',
+      pathSub: 'study',
+      titleAr: 'بوصلة الدراسة والمنح بالخارج',
+      titleFr: 'Boussole Études & Bourses',
+      headlineAr: 'أين يمكنني متابعة دراستي بمعدلي وميزانيتي؟',
+      headlineFr: 'Où étudier à l\'étranger avec mes notes et mon budget ?',
+      badgeAr: 'منح 100% وتكوين مأجور 🎓',
+      badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800',
+      descriptionAr: 'اكتشف الجامعات والمنح الدراسية الدولية الممولة بالكامل أو التكوين المهني الألماني المأجور (Ausbildung) المناسب لمستواك الدراسي وميزانيتك.',
+      descriptionFr: 'Trouvez les bourses 100%, universités accessibles et formations pros rémunérées en Allemagne selon votre mention et budget.',
+      inputsAr: ['المستوى الدراسي المستهدف', 'الميزة والمعدل', 'لغة التدريس المفضلة', 'الميزانية السنوية'],
+      outputsAr: ['المنح المتاحة 100%', 'التكوين المهني المأجور', 'دول منخفضة التكاليف', 'شروط القبول والتأشيرة'],
       icon: GraduationCap,
-      badgeAr: 'ممولة بالكامل'
+      timeEstimate: '2.5 دقائق',
+      questionsCount: STUDY_QUESTIONS.length
     },
     {
       id: 'jobs' as CompassType,
-      labelAr: 'بوصلة التوظيف السريع',
-      labelFr: 'Boussole Emploi Express',
-      subAr: 'خطة وظيفة مجزية خلال 6 أشهر',
+      pathSub: 'jobs',
+      titleAr: 'بوصلة التوظيف السريع',
+      titleFr: 'Boussole Emploi Express',
+      headlineAr: 'أريد وظيفة محترمة خلال 6 أشهر.. ما هي أقصر خطة؟',
+      headlineFr: 'Objectif emploi stable sous 6 mois : le meilleur plan ?',
+      badgeAr: 'خطة عمل 6 أشهر ⏱️',
+      badgeColor: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800',
+      descriptionAr: 'خارطة طريق للحصول على عمل مجزٍ بالقطاع الخاص بالمغرب، مراكز الأعمال الدولية أو وظائف تقنية عن بعد، مع تحديد المهارات الناقصة بدقة.',
+      descriptionFr: 'Feuille de route pour décrocher un poste en entreprise au Maroc, en centre de services ou en télétravail international.',
+      inputsAr: ['المدى الزمني المستهدف', 'أقوى مهارة لديك', 'مكان ونمط العمل المفضل'],
+      outputsAr: ['أقرب الوظائف للوصول', 'المهارات المطلوبة للبدء', 'خطة لأول راتب', 'نطاق الرواتب المتوقع'],
       icon: Briefcase,
-      badgeAr: 'سوق الشغل'
+      timeEstimate: '2 دقائق',
+      questionsCount: JOB_QUESTIONS.length
     },
     {
       id: 'shift' as CompassType,
-      labelAr: 'بوصلة التحول المهني',
-      labelFr: 'Reconversion Métier',
-      subAr: 'الخروج من الوظائف الروتينية للـ Tech',
+      pathSub: 'shift',
+      titleAr: 'بوصلة التحول المهني ومضاعفة الدخل',
+      titleFr: 'Reconversion Métier & Revenus',
+      headlineAr: 'أنا عالق في مركز اتصال أو وظيفة روتينية.. كيف أنتقل للـ Tech؟',
+      headlineFr: 'Bloqué en centre d\'appels : comment pivoter vers la Tech ?',
+      badgeAr: 'مضاعفة الدخل 2x 🚀',
+      badgeColor: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800',
+      descriptionAr: 'مخصصة للشباب الراغبين في الخروج من ضغط مراكز الاتصال والوظائف ذات الأفق المحدود والانتقال الآمن إلى مجالات التكنولوجيا والإدارة الرقمية دون مخاطرة.',
+      descriptionFr: 'Guide de reconversion pour passer des centres d\'appels aux métiers d\'avenir dans la Tech sans rupture de salaire.',
+      inputsAr: ['الوضع المهني الحالي', 'الساعات المتاحة أسبوعياً', 'الميزانية للتكوين'],
+      outputsAr: ['خارطة تعلم لسنتين', 'وظائف ذات دخل مضاعف', 'خطة الانتقال الآمن', 'شهادات معتمدة عالمياً'],
       icon: RefreshCw,
-      badgeAr: 'مضاعفة الدخل'
+      timeEstimate: '2 دقائق',
+      questionsCount: SHIFT_QUESTIONS.length
     },
     {
       id: 'side-hustle' as CompassType,
-      labelAr: 'بوصلة الدخل الإضافي',
-      labelFr: 'Boussole Side Hustle',
-      subAr: 'أول 5,000 درهم شهرياً بدون رأس مال',
+      pathSub: 'side-hustle',
+      titleAr: 'بوصلة الدخل الإضافي والمشاريع المصغرة',
+      titleFr: 'Boussole Side Hustle & Freelance',
+      headlineAr: 'كيف أحقق أول 5,000 درهم شهرياً من الإنترنت؟',
+      headlineFr: 'Comment générer mes premiers 5 000 MAD/mois en ligne ?',
+      badgeAr: 'بدون رأس مال 💰',
+      badgeColor: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800',
+      descriptionAr: 'تحديد أفضل نشاط رقمي (Freelancing، تقديم خدمات، تجارة إلكترونية، أو صناعة محتوى) يلائم وقت فراغك ومهاراتك الحالية، حتى لو كان رأس مالك 0 درهم.',
+      descriptionFr: 'Identifiez le meilleur modèle (freelance, e-commerce, services) pour vos heures libres même avec un capital initial de 0 DH.',
+      inputsAr: ['الوقت المتوفر أسبوعياً', 'رأس المال المتوفر (من 0 DH)', 'المهارات الرقمية الحالية'],
+      outputsAr: ['المجال الأنسب لحالتك', 'خطة الوصول لأول عميل', 'طرق استلام الأموال بالمغرب', 'توقعات الأرباح الواقعية'],
       icon: Coins,
-      badgeAr: 'مشاريع مصغرة'
+      timeEstimate: '2 دقائق',
+      questionsCount: SIDEHUSTLE_QUESTIONS.length
     }
   ];
 
+  // Helper to get questions
   const getQuestionsForActiveCompass = (): CompassQuestion[] => {
     switch (activeCompass) {
       case 'immigration':
@@ -136,20 +204,11 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
 
   const currentQuestions = getQuestionsForActiveCompass();
   const currentQ = currentQuestions[currentStep];
-  const activeTabConfig = COMPASS_TABS.find(t => t.id === activeCompass) || COMPASS_TABS[0];
+  const activeTabConfig = COMPASS_CONFIGS.find(t => t.id === activeCompass) || COMPASS_CONFIGS[0];
   const ActiveIcon = activeTabConfig.icon;
 
-  useEffect(() => {
-    trackPageView(`MezdoHub Compass - ${activeCompass}`);
-  }, [activeCompass]);
-
-  const handleSelectCompass = (type: CompassType) => {
-    setActiveCompass(type);
-    setCurrentStep(0);
-    setUserAnswers({});
-    setResult(null);
-    setIsSaved(false);
-    window.scrollTo({ top: 0, behavior: 'instant' });
+  const handleSelectCompassUrl = (subTabKey: string) => {
+    onNavigateToTab?.('compass', subTabKey);
   };
 
   const handleSelectOption = (questionId: string, optionId: string) => {
@@ -159,10 +218,12 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
     if (currentStep < currentQuestions.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
-      const computed = evaluateCompassResults(activeCompass, updated);
-      setResult(computed);
+      if (activeCompass) {
+        const computed = evaluateCompassResults(activeCompass, updated);
+        setResult(computed);
+      }
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   const handleReset = () => {
@@ -174,7 +235,7 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
   };
 
   const handleSaveToDashboard = () => {
-    if (!result) return;
+    if (!result || !activeCompass) return;
     try {
       const existing = JSON.parse(localStorage.getItem('mezdohub_saved_decisions') || '[]');
       const newEntry = {
@@ -203,38 +264,276 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
     window.print();
   };
 
-  return (
-    <div className={`max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 animate-fade-in ${isAr ? 'text-right' : 'text-left'}`}>
-      
-      {/* 1. COMPACT TOP HEADER WITH INSTANT COMPASS NAVIGATION */}
-      <header className="flex flex-col gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
-        {/* Top Control Bar: Back to Home + Active Compass Tag */}
-        <div className="flex items-center justify-between gap-3">
+  // ══════════════════════════════════════════════════════════════════════
+  // VIEW 1: MAIN GATEWAY PORTAL (/compass)
+  // Displayed when no subTab is specified, showcasing all 5 compasses
+  // ══════════════════════════════════════════════════════════════════════
+  if (!activeCompass) {
+    return (
+      <div className={`max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-12 animate-fade-in ${isAr ? 'text-right' : 'text-left'}`}>
+        
+        {/* Gateway Breadcrumb */}
+        <nav className="flex items-center gap-2 text-xs font-semibold text-slate-500">
           <button
             onClick={() => onNavigateToTab?.('home')}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
+            className="hover:text-blue-600 flex items-center gap-1 cursor-pointer transition-colors"
           >
             <Home className="w-3.5 h-3.5" />
             <span>{isAr ? 'الرئيسية' : 'Accueil'}</span>
-            <span className="text-slate-300 dark:text-slate-700">/</span>
-            <span className="text-blue-600 dark:text-blue-400 font-bold">{isAr ? 'بوصلة الفرص' : 'Boussole'}</span>
           </button>
+          <span>/</span>
+          <span className="text-blue-600 dark:text-blue-400 font-bold">
+            {isAr ? 'بوابة بوصلة الفرص والقرار' : 'Boussole Stratégique MezdoHub'}
+          </span>
+        </nav>
 
-          <div className="flex items-center gap-1.5 text-xs text-slate-500">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-            <span>{isAr ? 'تشخيص مباشر ومجاني 2026' : 'Diagnostic direct 2026'}</span>
+        {/* Hero Header: Platform Mission & Philosophy */}
+        <section className="text-center space-y-6 max-w-4xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-bold bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-900 shadow-2xs">
+            <Compass className="w-4 h-4 text-blue-600 animate-spin-slow" />
+            <span>{isAr ? 'MezdoHub Compass · محرك القرار المغربي والعربي 2026' : 'MezdoHub Decision Engine 2026'}</span>
           </div>
+
+          <h1 className="text-3xl sm:text-5xl font-black text-slate-900 dark:text-white leading-[1.2] tracking-tight">
+            {isAr ? (
+              <>
+                بدل أن تضيع 50 ساعة بين الفيديوهات وتضارب النصائح.. <br />
+                <span className="text-blue-600 dark:text-blue-400">اتخذ قرارك الصحيح بناءً على ظروفك الحقيقية</span>
+              </>
+            ) : (
+              <>
+                Prenez la bonne décision pour votre avenir <br />
+                <span className="text-blue-600 dark:text-blue-400">selon votre profil réel et vos opportunités</span>
+              </>
+            )}
+          </h1>
+
+          <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 max-w-3xl mx-auto leading-relaxed">
+            {isAr ? (
+              'MezdoHub ليس مجرد موقع معلومات أو مدونة عادية. نحن نساعد الشباب المغربي والعربي على اتخاذ القرار الأنسب لمستقبلهم: أجب عن أسئلة دقيقة خلال 3 دقائق، لتحصل فوراً على أفضل 3 مسارات مع نسبة الملاءمة وخطة تنفيذ عملية.'
+            ) : (
+              'MezdoHub n\'est pas un simple blog : c\'est un moteur de décision stratégique. En 3 minutes, obtenez vos 3 meilleurs parcours personnalisés avec plan d\'action concret.'
+            )}
+          </p>
+
+          {/* 4 Pillars of Value */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 text-xs">
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-center space-y-1">
+              <Clock className="w-5 h-5 text-blue-600 mx-auto" />
+              <div className="font-bold text-slate-900 dark:text-white">{isAr ? 'توفير الوقت' : 'Gain de temps'}</div>
+              <div className="text-[11px] text-slate-500">{isAr ? 'خطة دقيقة في 3 دقائق' : 'Plan en 3 minutes'}</div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-center space-y-1">
+              <ShieldCheck className="w-5 h-5 text-emerald-600 mx-auto" />
+              <div className="font-bold text-slate-900 dark:text-white">{isAr ? 'تقليل الخوف' : 'Réduction du risque'}</div>
+              <div className="text-[11px] text-slate-500">{isAr ? 'فهم أسباب كل اختيار' : 'Compréhension du pourquoi'}</div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-center space-y-1">
+              <TrendingUp className="w-5 h-5 text-purple-600 mx-auto" />
+              <div className="font-bold text-slate-900 dark:text-white">{isAr ? 'زيادة الفرص' : 'Opportunités réelles'}</div>
+              <div className="text-[11px] text-slate-500">{isAr ? 'مسارات لم تكن تخطر ببالك' : 'Pistes inexplorées'}</div>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-center space-y-1">
+              <Target className="w-5 h-5 text-amber-600 mx-auto" />
+              <div className="font-bold text-slate-900 dark:text-white">{isAr ? 'وضوح القرار' : 'Clarté décisionnelle'}</div>
+              <div className="text-[11px] text-slate-500">{isAr ? 'قرار + خطة + خطوات' : 'Décision + Plan clair'}</div>
+            </div>
+          </div>
+        </section>
+
+        {/* The 5 Main Compasses Grid */}
+        <section className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                {isAr ? 'اختر البوصلة المناسبة لقرارك الحالي:' : 'Choisissez votre boussole stratégique :'}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                {isAr ? 'كل بوصلة تحتوي على نموذج أسئلة مستقل ومباشر مع تقرير استراتيجي مخصص.' : 'Chaque boussole dispose d\'un questionnaire indépendant et d\'un rapport dédié.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {COMPASS_CONFIGS.map((item) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={item.id}
+                  onClick={() => handleSelectCompassUrl(item.pathSub)}
+                  className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm hover:border-blue-500 dark:hover:border-blue-500 hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group"
+                >
+                  <div className="space-y-4">
+                    {/* Top Row: Icon + Badge */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                        <Icon className="w-6 h-6" />
+                      </div>
+                      <span className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${item.badgeColor}`}>
+                        {isAr ? item.badgeAr : ''}
+                      </span>
+                    </div>
+
+                    {/* Titles */}
+                    <div className="space-y-1.5">
+                      <h3 className="text-lg font-black text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">
+                        {isAr ? item.titleAr : item.titleFr}
+                      </h3>
+                      <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                        {isAr ? item.headlineAr : item.headlineFr}
+                      </p>
+                    </div>
+
+                    {/* Description */}
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                      {isAr ? item.descriptionAr : item.descriptionFr}
+                    </p>
+
+                    {/* Inputs & Outputs Tags */}
+                    <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <div>
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                          {isAr ? 'المعطيات التي تفحصها البوصلة:' : 'Critères analysés :'}
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {item.inputsAr.map((input, idx) => (
+                            <span key={idx} className="text-[11px] bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-0.5 rounded-md">
+                              {input}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                          {isAr ? 'التقرير النهائي يمنحك:' : 'Résultats générés :'}
+                        </span>
+                        <div className="flex flex-wrap gap-1.5">
+                          {item.outputsAr.map((output, idx) => (
+                            <span key={idx} className="text-[11px] bg-blue-50/70 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-md font-medium">
+                              ✓ {output}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* CTA Bottom Button */}
+                  <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-blue-600 group-hover:text-blue-700">
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-slate-400" />
+                      <span className="text-slate-500 font-normal">{item.timeEstimate} ({item.questionsCount} أسئلة)</span>
+                    </span>
+                    <span className="flex items-center gap-1 group-hover:translate-x-[-4px] transition-transform font-bold">
+                      {isAr ? 'ابدأ التشخيص الآن' : 'Démarrer'}
+                      <ArrowIcon className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Comparison Table: Traditional Web vs MezdoHub Compass */}
+        <section className="bg-gradient-to-br from-slate-900 to-slate-950 text-white rounded-3xl p-6 sm:p-10 space-y-6">
+          <div className="text-center space-y-2 max-w-2xl mx-auto">
+            <h2 className="text-xl sm:text-2xl font-black">
+              {isAr ? 'الميزة التنافسية: لماذا يحب المستخدمون MezdoHub؟' : 'Pourquoi MezdoHub fait la différence ?'}
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300">
+              {isAr ? 'معظم المواقع تقدم معلومات مجردة.. نحن نمنحك قراراً قابلاً للتنفيذ.' : 'La plupart des sites donnent des informations, nous donnons un plan d\'action.'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-3xl mx-auto text-xs">
+            {/* The Old Way */}
+            <div className="p-5 rounded-2xl bg-slate-800/60 border border-slate-700/60 space-y-3">
+              <span className="font-bold text-rose-400 text-sm block">
+                ❌ {isAr ? 'البحث التقليدي والإنترنت العام' : 'Recherche traditionnelle'}
+              </span>
+              <ul className="space-y-2 text-slate-300">
+                <li>• عشرات الفيديوهات والمقالات المكررة والمعلومات المتناقضة.</li>
+                <li>• نصائح عامة لا تراعي سنك، دبلومك، أو ميزانيتك الحقيقية.</li>
+                <li>• ضياع أسابيع وأشهر في التردد والخوف من الخطوة الأولى.</li>
+                <li>• المستخدم يخرج بمعلومات كثيرة، لكن دون أي قرار محدد.</li>
+              </ul>
+            </div>
+
+            {/* The MezdoHub Way */}
+            <div className="p-5 rounded-2xl bg-blue-950/60 border border-blue-500/50 space-y-3">
+              <span className="font-bold text-emerald-400 text-sm block">
+                ✅ {isAr ? 'منهجية MezdoHub Compass' : 'Méthode MezdoHub Compass'}
+              </span>
+              <ul className="space-y-2 text-slate-200">
+                <li>• تشخيص رقمي فوري مبني على معايير القبول الحقيقية لسنة 2026.</li>
+                <li>• أفضل 3 مسارات تناسبك تماماً مع درجة الملاءمة والتكلفة بالدرهم.</li>
+                <li>• خارطة طريق تنفيذية من 3 مراحل مع مدة كل مرحلة.</li>
+                <li>• المستخدم يخرج بقرار واضح، ثقة عالية، وخطة عمل واقعية.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    );
+  }
+
+  // ══════════════════════════════════════════════════════════════════════
+  // VIEW 2: SPECIFIC COMPASS QUESTIONNAIRE / REPORT VIEW
+  // Triggered when URL is /compass/immigration, /compass/study, etc.
+  // ══════════════════════════════════════════════════════════════════════
+  return (
+    <div className={`max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-6 animate-fade-in ${isAr ? 'text-right' : 'text-left'}`}>
+      
+      {/* 1. TOP HEADER WITH INSTANT CLEAN URL SWITCHING */}
+      <header className="flex flex-col gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+        
+        {/* Breadcrumb Bar + Back to Gateway */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+            <button
+              onClick={() => onNavigateToTab?.('home')}
+              className="hover:text-slate-900 dark:hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              <Home className="w-3.5 h-3.5" />
+              <span>{isAr ? 'الرئيسية' : 'Accueil'}</span>
+            </button>
+            <span>/</span>
+            <button
+              onClick={() => onNavigateToTab?.('compass')}
+              className="hover:text-blue-600 font-bold text-slate-700 dark:text-slate-300 cursor-pointer transition-colors"
+            >
+              {isAr ? 'بوصلة الفرص' : 'Boussole'}
+            </button>
+            <span>/</span>
+            <span className="text-blue-600 dark:text-blue-400 font-bold truncate">
+              {isAr ? activeTabConfig.titleAr : activeTabConfig.titleFr}
+            </span>
+          </div>
+
+          <button
+            onClick={() => onNavigateToTab?.('compass')}
+            className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 cursor-pointer shrink-0"
+          >
+            <ArrowIcon className="w-3.5 h-3.5" />
+            <span>{isAr ? 'بوابة البوصلات' : 'Toutes les boussoles'}</span>
+          </button>
         </div>
 
-        {/* 5-Tabs Quick Horizontal Scroll Bar (Direct access to any compass) */}
+        {/* 5-Tabs Quick Horizontal Navigation: Updates URL to dedicated compass cleanly */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {COMPASS_TABS.map(tab => {
+          {COMPASS_CONFIGS.map(tab => {
             const isCurrent = activeCompass === tab.id;
             const Icon = tab.icon;
             return (
               <button
                 key={tab.id}
-                onClick={() => handleSelectCompass(tab.id)}
+                onClick={() => handleSelectCompassUrl(tab.pathSub)}
                 className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap shrink-0 transition-all flex items-center gap-2 cursor-pointer ${
                   isCurrent
                     ? 'bg-blue-600 text-white shadow-xs'
@@ -242,7 +541,7 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
-                <span>{isAr ? tab.labelAr : tab.labelFr}</span>
+                <span>{isAr ? tab.titleAr : tab.titleFr}</span>
               </button>
             );
           })}
@@ -261,15 +560,15 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
               </div>
               <div>
                 <h1 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
-                  {isAr ? activeTabConfig.labelAr : activeTabConfig.labelFr}
+                  {isAr ? activeTabConfig.titleAr : activeTabConfig.titleFr}
                 </h1>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {isAr ? activeTabConfig.subAr : ''}
+                  {isAr ? activeTabConfig.headlineAr : activeTabConfig.headlineFr}
                 </p>
               </div>
             </div>
 
-            <span className="text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-900 px-2.5 py-1 rounded-lg shrink-0">
+            <span className={`text-xs font-bold px-2.5 py-1 rounded-lg shrink-0 border ${activeTabConfig.badgeColor}`}>
               {isAr ? activeTabConfig.badgeAr : ''}
             </span>
           </div>
@@ -408,7 +707,7 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
 
               <button
                 onClick={handleReset}
-                className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+                className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
               >
                 {isAr ? 'إعادة التشخيص ↺' : 'Recommencer ↺'}
               </button>
@@ -592,7 +891,7 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
             ))}
           </div>
 
-          {/* Bottom Actions */}
+          {/* Bottom Actions Bar */}
           <div className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 space-y-4 text-center max-w-2xl mx-auto shadow-sm">
             <h3 className="text-xl sm:text-2xl font-black">
               {isAr ? 'جاهز لبدء الخطوة الأولى الآن؟' : 'Prêt à démarrer l\'étape 1 ?'}
@@ -610,10 +909,10 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
                 {isAr ? 'صانع السيرة الذاتية (CV ATS)' : 'Créer mon CV ATS Pro'}
               </button>
               <button
-                onClick={handleReset}
+                onClick={() => onNavigateToTab?.('compass')}
                 className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all border border-slate-700 cursor-pointer"
               >
-                {isAr ? 'تجربة بوصلة أخرى 🧭' : 'Tester une autre boussole'}
+                {isAr ? 'استكشاف بوصلة أخرى 🧭' : 'Tester une autre boussole'}
               </button>
             </div>
           </div>

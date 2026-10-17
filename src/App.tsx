@@ -74,6 +74,13 @@ const TAB_TITLES: Record<string, { ar: string; fr: string }> = {
 };
 
 const SUB_TAB_TITLES: Record<string, string> = {
+  // MezdoHub Compass Sub-Tabs
+  immigration: 'بوصلة الهجرة الدولية',
+  study: 'بوصلة الدراسة والمنح بالخارج',
+  jobs: 'بوصلة التوظيف السريع',
+  shift: 'بوصلة التحول المهني ومضاعفة الدخل',
+  'side-hustle': 'بوصلة الدخل الإضافي والمشاريع المصغرة',
+
   'canada-immigration': 'دليل كندا الشامل',
   'germany-opportunity-card': 'بطاقة الفرصة الألمانية',
   'european-scholarships': 'المنح الأوروبية الممولة',
@@ -287,7 +294,7 @@ export function App() {
           {/* 0. MezdoHub Compass Strategic Decision Engine */}
           {activeTab === 'compass' && (
             <MezdoHubCompass
-              initialType={(activeSubTab as any) || 'immigration'}
+              subTab={activeSubTab as any}
               onNavigateToTab={handleSelectTab}
             />
           )}

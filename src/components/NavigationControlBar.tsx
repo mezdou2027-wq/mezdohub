@@ -48,6 +48,18 @@ interface NavigationControlBarProps {
 // Static Quick Sections Directory hoisted outside component to prevent re-allocations
 const ALL_SECTIONS = [
   {
+    categoryAr: '🧭 بوصلة الفرص والقرار (محرك القرار 2026)',
+    categoryFr: 'Boussole Stratégique & Décisions',
+    items: [
+      { id: 'compass', label: 'بوابة بوصلة الفرص 🧭', desc: 'بوابة اتخاذ القرار واختيار المسار المناسب', icon: Compass },
+      { id: 'compass', subTab: 'immigration', label: 'بوصلة الهجرة الدولية ✈️', desc: 'ألمانيا، كندا، فرنسا أو العمل الحر', icon: Plane },
+      { id: 'compass', subTab: 'study', label: 'بوصلة الدراسة والمنح 🎓', desc: 'منح 100% وتكوين مأجور Ausbildung', icon: GraduationCap },
+      { id: 'compass', subTab: 'jobs', label: 'بوصلة التوظيف السريع 💼', desc: 'خطة الحصول على عمل خلال 6 أشهر', icon: Briefcase },
+      { id: 'compass', subTab: 'shift', label: 'بوصلة التحول المهني 🚀', desc: 'الخروج من الوظائف الروتينية للـ Tech', icon: Layers },
+      { id: 'compass', subTab: 'side-hustle', label: 'بوصلة الدخل الإضافي 💰', desc: 'أول 5,000 درهم شهرياً بدون رأس مال', icon: Coins },
+    ]
+  },
+  {
     categoryAr: '🌟 فضاء المرشح والمساعد الذكي',
     categoryFr: 'Espace Candidat & IA',
     items: [

@@ -13,12 +13,14 @@ export const CLEAN_ROUTES: { path: string; tab: string; subTab?: string; id?: st
   // Homepage
   { path: '/', tab: 'home', titleAr: 'الرئيسية – منصة الفرص الدولية للمغاربة' },
   // MezdoHub Compass Strategic Decision Engine (/compass/...)
-  { path: '/compass', tab: 'compass', titleAr: 'بوصلة الفرص والقرار – محرك القرار المغربي والعربي 2026' },
+  { path: '/compass', tab: 'compass', titleAr: 'بوابة بوصلة الفرص والقرار – محرك القرار المغربي والعربي 2026' },
   { path: '/compass/immigration', tab: 'compass', subTab: 'immigration', titleAr: 'بوصلة الهجرة الدولية – تقرير المسارات الأنسب' },
   { path: '/compass/study', tab: 'compass', subTab: 'study', titleAr: 'بوصلة الدراسة والمنح بالخارج – الترشيحات الأكاديمية' },
   { path: '/compass/jobs', tab: 'compass', subTab: 'jobs', titleAr: 'بوصلة التوظيف السريع – خطة الحصول على عمل' },
   { path: '/compass/career-shift', tab: 'compass', subTab: 'shift', titleAr: 'بوصلة التحول المهني ومضاعفة الدخل' },
+  { path: '/compass/shift', tab: 'compass', subTab: 'shift', titleAr: 'بوصلة التحول المهني ومضاعفة الدخل' },
   { path: '/compass/side-hustle', tab: 'compass', subTab: 'side-hustle', titleAr: 'بوصلة الدخل الإضافي والمشاريع المصغرة' },
+  { path: '/compass/side-income', tab: 'compass', subTab: 'side-hustle', titleAr: 'بوصلة الدخل الإضافي والمشاريع المصغرة' },
 
   // Deep Knowledge Guides & Articles (/guide/...)
   { path: '/guide/morocco-customs', tab: 'content-hub', id: 'morocco-customs-aliexpress-temu-shein', titleAr: 'دليل الجمارك المغربية على طرود AliExpress و Temu و Shein 2026' },
@@ -75,7 +77,21 @@ export function resolveCurrentRoute(): RouteEntry {
       return { tab: directMatch.tab, subTab: directMatch.subTab, id: directMatch.id };
     }
 
-    // 2. Check dynamic guide route: /guide/:slug
+    // 2. Check dynamic compass route: /compass or /compass/:type
+    if (pathname === '/compass') {
+      return { tab: 'compass' };
+    }
+    if (pathname.startsWith('/compass/')) {
+      const type = pathname.replace('/compass/', '').toLowerCase();
+      if (type === 'immigration') return { tab: 'compass', subTab: 'immigration' };
+      if (type === 'study') return { tab: 'compass', subTab: 'study' };
+      if (type === 'jobs' || type === 'job') return { tab: 'compass', subTab: 'jobs' };
+      if (type === 'career-shift' || type === 'shift') return { tab: 'compass', subTab: 'shift' };
+      if (type === 'side-hustle' || type === 'side-income') return { tab: 'compass', subTab: 'side-hustle' };
+      return { tab: 'compass', subTab: type };
+    }
+
+    // 3. Check dynamic guide route: /guide/:slug
     if (pathname.startsWith('/guide/')) {
       const slug = pathname.replace('/guide/', '');
       // Match against known guide IDs
@@ -164,6 +180,16 @@ export function routeToPath(entry: RouteEntry): string {
   if (tab === 'study-abroad') return '/tool/study-abroad';
   if (tab === 'global-jobs') return '/tool/global-jobs';
 
+  // MezdoHub Compass Routes
+  if (tab === 'compass') {
+    if (subTab === 'immigration') return '/compass/immigration';
+    if (subTab === 'study') return '/compass/study';
+    if (subTab === 'jobs' || subTab === 'job') return '/compass/jobs';
+    if (subTab === 'shift' || subTab === 'career-shift') return '/compass/career-shift';
+    if (subTab === 'side-hustle' || subTab === 'side-income') return '/compass/side-hustle';
+    return '/compass';
+  }
+
   // Standalone Views
   if (tab === 'shorts') return '/shorts';
   if (tab === 'author-eeat') return '/author';
@@ -215,6 +241,26 @@ export function syncCleanUrl(entry: RouteEntry, push = true) {
     const matchedRoute = CLEAN_ROUTES.find(r => r.path === cleanPath);
     if (matchedRoute) {
       document.title = `${matchedRoute.titleAr} | MezdoHub`;
+    }
+
+    // Dynamic Meta Description for SEO
+    const COMPASS_DESCRIPTIONS: Record<string, string> = {
+      '/compass': 'بوابة بوصلة الفرص الذكية MezdoHub – محرك القرار المغربي والعربي 2026. اختر مجالك واحصل على تشخيص دقيق وخطة تنفيذ فورية.',
+      '/compass/immigration': 'بوصلة الهجرة الدولية 2026 – أفضل 3 مسارات تلائم سنك ودبلومك ولغاتك وميزانيتك (ألمانيا، فرنسا، كندا، العمل الحر).',
+      '/compass/study': 'بوصلة الدراسة والمنح بالخارج – ترشيحات الجامعات الدولية والمنح الممولة 100% والتكوين المهني المأجور.',
+      '/compass/jobs': 'بوصلة التوظيف السريع – خطة عمل مجربة للمغاربة للحصول على وظيفة خلال 6 أشهر بمراكز الأعمال أو عن بعد.',
+      '/compass/career-shift': 'بوصلة التحول المهني – خطة الانتقال من الوظائف الروتينية ومراكز الاتصال إلى التكنولوجيا ومضاعفة الدخل.',
+      '/compass/side-hustle': 'بوصلة الدخل الإضافي – إطلاق مشروعك المستقل عبر الإنترنت بدون رأس مال مع خطة لأول 5,000 درهم شهرياً.'
+    };
+
+    if (COMPASS_DESCRIPTIONS[cleanPath]) {
+      let descTag = document.querySelector('meta[name="description"]');
+      if (!descTag) {
+        descTag = document.createElement('meta');
+        descTag.setAttribute('name', 'description');
+        document.head.appendChild(descTag);
+      }
+      descTag.setAttribute('content', COMPASS_DESCRIPTIONS[cleanPath]);
     }
   } catch (err) {
     console.error('Failed to sync clean URL:', err);
