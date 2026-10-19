@@ -37,6 +37,9 @@ export const CLEAN_ROUTES: { path: string; tab: string; subTab?: string; id?: st
   // Interactive Tools & Calculators (/tool/...)
   { path: '/tool/cv-builder', tab: 'cv-builder', titleAr: 'صانع السيرة الذاتية ورسائل التحفيز ATS Pro' },
   { path: '/tool/dv-lottery', tab: 'dv-lottery', titleAr: 'فاحص الصورة البيومترية للقرعة الأمريكية 600x600' },
+  { path: '/dv-lottery', tab: 'dv-lottery', titleAr: 'القرعة الأمريكية الرسمية DV – فحص الصورة البيومترية وخدمة التسجيل' },
+  { path: '/dv-registration', tab: 'dv-lottery', titleAr: 'خدمة تسجيل القرعة الأمريكية الرسمية وتدقيق الملف' },
+  { path: '/lottery', tab: 'dv-lottery', titleAr: 'القرعة الأمريكية الرسمية DV' },
   { path: '/tool/paypal-calculator', tab: 'freelance-money', subTab: 'paypal', titleAr: 'حاسبة بايبال المغربية واقتطاعات السحب البنكي' },
   { path: '/tool/auto-entrepreneur', tab: 'freelance-money', subTab: 'auto-entrepreneur', titleAr: 'محاكي المقاول الذاتي والضرائب بالمغرب' },
   { path: '/tool/salary-calculator', tab: 'local-jobs', subTab: 'salary', titleAr: 'حاسبة الراتب الصافي واقتطاعات IGR و CNSS بالمغرب' },
@@ -166,7 +169,7 @@ export function routeToPath(entry: RouteEntry): string {
 
   // Tools & Calculators
   if (tab === 'cv-builder') return '/tool/cv-builder';
-  if (tab === 'dv-lottery') return '/tool/dv-lottery';
+  if (tab === 'dv-lottery') return '/dv-lottery';
   if (tab === 'freelance-money') {
     if (subTab === 'paypal') return '/tool/paypal-calculator';
     if (subTab === 'auto-entrepreneur') return '/tool/auto-entrepreneur';

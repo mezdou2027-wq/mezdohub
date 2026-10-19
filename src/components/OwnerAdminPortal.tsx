@@ -346,7 +346,11 @@ export const OwnerAdminPortal: React.FC = () => {
                       <td className="p-3">
                         <div className="flex items-center justify-center gap-1.5">
                           <a
-                            href={`https://wa.me/${waNumber}?text=${encodeURIComponent(`السلام عليكم أخي ${lead.name}، معك إدارة منصة MezdoHub بخصوص طلبك لتجهيز ملف التوظيف لشركة ${lead.company}`)}`}
+                            href={`https://wa.me/${waNumber}?text=${encodeURIComponent(
+                              lead.company.includes('القرعة الأمريكية')
+                                ? `السلام عليكم ${lead.name}، معك إدارة منصة MezdoHub بخصوص ملفك لتسجيل القرعة الأمريكية (رقم المرجع: ${lead.id}). تم استلام بياناتك وتدقيق صورتك.`
+                                : `السلام عليكم أخي ${lead.name}، معك إدارة منصة MezdoHub بخصوص طلبك لتجهيز ملف التوظيف لشركة ${lead.company}`
+                            )}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] inline-flex items-center gap-1 shadow-xs"

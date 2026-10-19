@@ -364,7 +364,7 @@ export function App() {
 
           {/* 10. Dedicated DV Lottery & 600x600 Biometric Photo Hub */}
           {activeTab === 'dv-lottery' && (
-            <DvLotteryHub onBack={handleGoBack} />
+            <DvLotteryHub onBack={handleGoBack} onNavigateToTab={handleSelectTab} />
           )}
 
           {/* 11. Launch Partners Hub */}
