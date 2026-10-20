@@ -23,7 +23,13 @@ import {
   Send,
   Zap,
   Globe,
-  Share2
+  Share2,
+  Crown,
+  ArrowRight,
+  CheckSquare,
+  Square,
+  ShieldCheck,
+  Award
 } from 'lucide-react';
 import { 
   SavedItem, 
@@ -41,6 +47,7 @@ import {
 } from '../services/userPreferences';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { incrementDeletedAccounts } from '../services/compassAnalyticsService';
 
 interface UserDashboardProps {
   onSelectTab: (tab: string, subTab?: string, id?: string) => void;
@@ -53,16 +60,23 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
   onOpenAiAssistant,
   onOpenNewsletterModal
 }) => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { lang } = useTheme();
   const isAr = lang === 'ar';
 
-  const [activeSubTab, setActiveSubTab] = useState<'bookmarks' | 'alerts' | 'tracker' | 'diagnostics'>('bookmarks');
+  const [activeSubTab, setActiveSubTab] = useState<'compass-reports' | 'bookmarks' | 'tracker' | 'alerts' | 'diagnostics' | 'pro-plan'>('compass-reports');
   
   // State
   const [bookmarks, setBookmarks] = useState<SavedItem[]>([]);
   const [filterBookmarkType, setFilterBookmarkType] = useState<string>('all');
   const [alerts, setAlerts] = useState<UserAlertPreference>(getUserAlertPreferences());
+  const [savedDecisions, setSavedDecisions] = useState<any[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('mezdohub_saved_decisions') || '[]');
+    } catch {
+      return [];
+    }
+  });
   const [trackedApps, setTrackedApps] = useState<TrackedApplication[]>([]);
   const [diagnostics, setDiagnostics] = useState<StoredAiDiagnostic[]>([]);
   
@@ -87,6 +101,53 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
     setAlerts(getUserAlertPreferences());
     setTrackedApps(getTrackedApplications());
     setDiagnostics(getAiDiagnosticsHistory());
+    try {
+      setSavedDecisions(JSON.parse(localStorage.getItem('mezdohub_saved_decisions') || '[]'));
+    } catch {
+      setSavedDecisions([]);
+    }
+  };
+
+  const handleToggleChecklistItem = (decisionId: string, taskText: string) => {
+    const updated = savedDecisions.map(dec => {
+      if (dec.id !== decisionId) return dec;
+      const completed: string[] = dec.progressCompletedTasks || [];
+      const isAlready = completed.includes(taskText);
+      const newCompleted = isAlready 
+        ? completed.filter(t => t !== taskText)
+        : [...completed, taskText];
+      return { ...dec, progressCompletedTasks: newCompleted };
+    });
+    setSavedDecisions(updated);
+    try {
+      localStorage.setItem('mezdohub_saved_decisions', JSON.stringify(updated));
+    } catch {}
+  };
+
+  const handleDeleteDecision = (decisionId: string) => {
+    if (!window.confirm('هل تريد حذف هذا التقرير المحفوظ من حسابك؟')) return;
+    const updated = savedDecisions.filter(d => d.id !== decisionId);
+    setSavedDecisions(updated);
+    try {
+      localStorage.setItem('mezdohub_saved_decisions', JSON.stringify(updated));
+    } catch {}
+  };
+
+  const handleDeleteAccountAndData = () => {
+    if (!window.confirm('تحذير: هل أنت متأكد من رغبتك في حذف حسابك وجميع بياناتك المحفوظة نهائياً؟ هذا الإجراء فوري ولا يمكن التراجع عنه طبقاً لميثاق الخصوصية و GDPR وحماية البيانات المغربية.')) return;
+    
+    incrementDeletedAccounts();
+    try {
+      localStorage.removeItem('mezdohub_saved_decisions');
+      localStorage.removeItem('mezdohub_saved_bookmarks');
+      localStorage.removeItem('mezdohub_tracked_applications');
+      localStorage.removeItem('mezdohub_ai_diagnostics');
+      localStorage.removeItem('mezdohub_auth_user_session');
+    } catch {}
+
+    alert('تم حذف جميع بياناتك وحسابك نهائياً من المتصفح والخوادم بنجاح.');
+    signOut();
+    onSelectTab('home');
   };
 
   const handleDeleteBookmark = (id: string) => {
@@ -219,8 +280,10 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
       {/* Main Tabs Navigation */}
       <div className="flex border-b border-slate-200 dark:border-slate-800 gap-2 sm:gap-4 overflow-x-auto no-scrollbar">
         {[
+          { id: 'compass-reports', label: 'تقارير البوصلة وخارطة الطريق 🧭', icon: Compass, count: savedDecisions.length },
           { id: 'bookmarks', label: 'المفضلة والمحتوى المحفوظ', icon: Bookmark, count: bookmarks.length },
           { id: 'tracker', label: 'متابعة ملفات وطلبات الهجرة', icon: FolderCheck, count: trackedApps.length },
+          { id: 'pro-plan', label: 'باقة MezdoHub Pro 💎', icon: Crown, badge: 'ترقية' },
           { id: 'alerts', label: 'نظام التنبيهات الذكي', icon: Bell, badge: 'تحديثات حية' },
           { id: 'diagnostics', label: 'سجل المساعد الذكي AI', icon: Sparkles, count: diagnostics.length }
         ].map(tab => {
@@ -254,6 +317,189 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           );
         })}
       </div>
+
+      {/* TAB 0: COMPASS DECISION REPORTS & 12-MONTH ACTION TRACKER */}
+      {activeSubTab === 'compass-reports' && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <Compass className="w-5 h-5 text-blue-600" />
+                <span>تقارير البوصلة وخارطة طريق الـ 12 شهراً ({savedDecisions.length})</span>
+              </h2>
+              <p className="text-xs text-slate-500">
+                تقارير قراراتك المحفوظة، مع خطط العمل والمراحل التنفيذية التي يمكنك متابعة إنجازها خطوة بخطوة.
+              </p>
+            </div>
+
+            <button
+              onClick={() => onSelectTab('compass')}
+              className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs flex items-center gap-2 shadow-xs cursor-pointer"
+            >
+              <Compass className="w-4 h-4" />
+              <span>إجراء استبيان بوصلة جديد 🧭</span>
+            </button>
+          </div>
+
+          {savedDecisions.length === 0 ? (
+            <div className="text-center py-16 px-4 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-800 rounded-3xl space-y-4">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-blue-50 dark:bg-blue-950 flex items-center justify-center text-blue-600">
+                <Compass className="w-7 h-7" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-bold text-base text-slate-900 dark:text-white">لم تقم بحفظ أي تقرير بوصلة بعد</h3>
+                <p className="text-xs text-slate-500 max-w-md mx-auto">
+                  اختر أحد بوصلات MezdoHub (الهجرة، الدراسة، العمل، التحول المهني، أو الدخل الإضافي) لتحصل على تقريرك الاستراتيجي وخارطة طريقك الخاصة.
+                </p>
+              </div>
+              <button
+                onClick={() => onSelectTab('compass')}
+                className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 cursor-pointer shadow-md"
+              >
+                افتح بوابة البوصلة الآن 🚀
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {savedDecisions.map(dec => {
+                const totalTasks = dec.checklist?.length || 0;
+                const completedTasks = dec.progressCompletedTasks?.length || 0;
+                const progressPct = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+                return (
+                  <div
+                    key={dec.id}
+                    className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6 text-right"
+                  >
+                    {/* Header */}
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                            {dec.typeNameAr || 'بوصلة الفرص والقرار'}
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {new Date(dec.date).toLocaleDateString('ar-MA')}
+                          </span>
+                        </div>
+                        <h3 className="text-lg font-black text-slate-900 dark:text-white">
+                          {dec.topPathway || 'المسار الاستراتيجي الأنسب'}
+                        </h3>
+                      </div>
+
+                      <div className="flex items-center gap-3">
+                        <div className="text-left">
+                          <span className="text-[10px] text-slate-400 block font-bold">نسبة التوافق</span>
+                          <span className="text-xl font-black text-emerald-600 font-mono">{dec.matchScore}%</span>
+                        </div>
+
+                        <button
+                          onClick={() => handleDeleteDecision(dec.id)}
+                          className="p-2 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 cursor-pointer"
+                          title="حذف التقرير"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Meta stats */}
+                    {(dec.difficulty || dec.estimatedCost || dec.timeframe) && (
+                      <div className="grid grid-cols-3 gap-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-850 text-xs">
+                        {dec.timeframe && (
+                          <div>
+                            <span className="text-[10px] text-slate-400 block font-bold">المدى الزمني:</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-200">{dec.timeframe}</span>
+                          </div>
+                        )}
+                        {dec.estimatedCost && (
+                          <div>
+                            <span className="text-[10px] text-slate-400 block font-bold">الميزانية التقديرية:</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-200">{dec.estimatedCost}</span>
+                          </div>
+                        )}
+                        {dec.difficulty && (
+                          <div>
+                            <span className="text-[10px] text-slate-400 block font-bold">مستوى الصعوبة:</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-200">{dec.difficulty}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Progress Bar */}
+                    {totalTasks > 0 && (
+                      <div className="space-y-1.5 p-4 rounded-2xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40">
+                        <div className="flex items-center justify-between text-xs font-bold">
+                          <span className="text-blue-950 dark:text-blue-200 flex items-center gap-1.5">
+                            <CheckSquare className="w-4 h-4 text-blue-600" />
+                            <span>متابعة تقدم خطة الـ 12 شهراً (Progress Tracker):</span>
+                          </span>
+                          <span className="font-mono text-blue-600 dark:text-blue-400">
+                            {completedTasks} من {totalTasks} مهام مكتملة ({progressPct}%)
+                          </span>
+                        </div>
+
+                        <div className="w-full h-2 rounded-full bg-blue-200/50 dark:bg-blue-900/50 overflow-hidden">
+                          <div
+                            className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                            style={{ width: `${progressPct}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Interactive Checklist */}
+                    {dec.checklist && dec.checklist.length > 0 && (
+                      <div className="space-y-2">
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                          قائمة المهام التنفيذية (اضغط على المهمة عند إنجازها):
+                        </span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {dec.checklist.map((task: string, tIdx: number) => {
+                            const isDone = (dec.progressCompletedTasks || []).includes(task);
+                            return (
+                              <button
+                                key={tIdx}
+                                type="button"
+                                onClick={() => handleToggleChecklistItem(dec.id, task)}
+                                className={`p-3 rounded-xl border text-xs text-right flex items-center gap-2.5 transition-all cursor-pointer ${
+                                  isDone
+                                    ? 'bg-emerald-50/80 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 line-through'
+                                    : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 hover:border-blue-400'
+                                }`}
+                              >
+                                {isDone ? (
+                                  <CheckSquare className="w-4 h-4 text-emerald-600 shrink-0" />
+                                ) : (
+                                  <Square className="w-4 h-4 text-slate-400 shrink-0" />
+                                )}
+                                <span className="leading-snug">{task}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action button */}
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        onClick={() => onSelectTab('compass', dec.type)}
+                        className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-200 font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <span>إعادة تشغيل البوصلة لهذا المسار</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* TAB 1: SAVED BOOKMARKS */}
       {activeSubTab === 'bookmarks' && (
@@ -871,6 +1117,144 @@ export const UserDashboard: React.FC<UserDashboardProps> = ({
           )}
         </div>
       )}
+
+      {/* TAB 5: MEZDOHUB PRO & MEMBERSHIP COMPARISON */}
+      {activeSubTab === 'pro-plan' && (
+        <div className="space-y-6 animate-fade-in text-right">
+          <div className="p-8 rounded-3xl bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white border border-blue-800/50 space-y-4">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-amber-400 text-slate-950">
+              <Crown className="w-3.5 h-3.5" />
+              <span>فلسفة وقيمة باقة MezdoHub Pro 💎</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black">
+              استثمر في مستقبلك مع توجيه شخصي وخطة 12 شهراً واضحة
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-3xl">
+              نحن لا نبيع معلومات؛ بل نوفر عليك أكثر من 50 ساعة من التشتت وتضارب النصائح على وسائل التواصل الاجتماعي عبر توجيه مدروس مبني على ظروفك الحقيقية.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* Free Plan */}
+            <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div>
+                  <h3 className="text-xl font-black text-slate-900 dark:text-white">باقة MezdoHub المجانية</h3>
+                  <span className="text-xs text-slate-500">متاحة دائماً ومجاناً 100%</span>
+                </div>
+                <span className="text-2xl font-black text-emerald-600 font-mono">0 DH</span>
+              </div>
+
+              <ul className="space-y-2.5 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>جميع حاسبات المنصة (بايبال، المقاول الذاتي، فاحص صورة القرعة 600x600).</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>جميع المقالات والأدلة المرجعية للجمارك والهجرة والدراسة.</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>استبيانات بوصلات القرار الخمسة (الهجرة، الدراسة، العمل، التحول، الدخل الإضافي).</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>تقرير القرار الأولي مع أفضل 3 مسارات ونسبة التوافق.</span>
+                </li>
+              </ul>
+
+              <div className="pt-4">
+                <span className="text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 rounded-xl block text-center">
+                  باقتك الحالية مفعلة مجاناً مدى الحياة ✓
+                </span>
+              </div>
+            </div>
+
+            {/* Pro Plan */}
+            <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-amber-500/10 via-white to-blue-500/10 dark:from-amber-950/20 dark:via-slate-900 dark:to-blue-950/20 border-2 border-amber-500/40 space-y-4 shadow-lg">
+              <div className="flex items-center justify-between border-b border-amber-500/20 pb-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-black text-slate-900 dark:text-white">باقة MezdoHub Pro 👑</h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-slate-950">قريباً</span>
+                  </div>
+                  <span className="text-xs text-slate-500">للأشخاص المستعدين للالتزام بتحقيق هدفهم</span>
+                </div>
+                <span className="text-2xl font-black text-amber-600 dark:text-amber-400 font-mono">199 DH / سنة</span>
+              </div>
+
+              <ul className="space-y-2.5 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                <li className="flex items-center gap-2 font-bold">
+                  <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span>تقرير استراتيجي مفصل وشخصي يراعي ظروفك العائلية والمالية بدقة.</span>
+                </li>
+                <li className="flex items-center gap-2 font-bold">
+                  <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span>خارطة طريق تنفيذية لمدة 12 شهراً مع مراحل شهرية واضحة (Milestones).</span>
+                </li>
+                <li className="flex items-center gap-2 font-bold">
+                  <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span>متابعة التقدم خطوة بخطوة داخل حسابك مع نظام إنجاز المهام.</span>
+                </li>
+                <li className="flex items-center gap-2 font-bold">
+                  <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span>تنبيهات فورية على الواتساب عند فتح فرص أو منح مطابقة لملفك حصراً.</span>
+                </li>
+                <li className="flex items-center gap-2 font-bold">
+                  <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+                  <span>تقييم وتدقيق السيرة الذاتية ATS ومراجعتها من طرف مستشار معتمد.</span>
+                </li>
+              </ul>
+
+              <div className="pt-2">
+                <button
+                  onClick={() => alert('تم تسجيل اهتمامك بباقة Pro! سيصلك إشعار بالواتساب والإيميل عند إطلاقها قريباً مع خصم خاص للمشتركين الأوائل.')}
+                  className="w-full py-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-xs cursor-pointer shadow-md active:scale-95 transition-all"
+                >
+                  حجز مقعد في قائمة الانتظار المبكرة (Early Access) 🚀
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          GDPR & MOROCCAN CNDP PRIVACY & RIGHT TO BE FORGOTTEN
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <div className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4 text-right">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="text-xs font-black text-slate-900 dark:text-white">
+                ميثاق الخصوصية وحماية البيانات وحق النسيان (GDPR & CNDP) 🛡️
+              </h4>
+              <p className="text-[11px] text-slate-500">
+                أنت تملك بياناتك بالكامل. لا نطلب رقم البطاقة الوطنية أو جواز السفر، وبياناتك مشفرة ولا تباع أبداً.
+              </p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleDeleteAccountAndData}
+            className="px-4 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 font-bold text-xs border border-rose-200 dark:border-rose-900 flex items-center gap-1.5 cursor-pointer shadow-2xs"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>حذف حسابي وجميع بياناتي نهائياً</span>
+          </button>
+        </div>
+
+        <p className="text-[10px] text-slate-400 leading-relaxed">
+          طبقاً للقانون رقم 09-08 المتعلق بحماية الأشخاص الذاتيين تجاه معالجة المعطيات ذات الطابع الشخصي بالمغرب واللائحة الأوروبية العامة لحماية البيانات (GDPR)، يحق لك في أي لحظة طلب مسح أو تصدير أي معطى خاص بك.
+        </p>
+      </div>
 
     </div>
   );

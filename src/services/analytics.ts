@@ -139,3 +139,65 @@ export const trackPageView = (tabName: string) => {
     page_path: `/${tabName}`
   });
 };
+
+// 6. MezdoHub 2.0 Compass Events:
+export const trackCompassStarted = (compassType: string, compassNameAr: string) => {
+  trackConversion('Compass Started', {
+    compass_type: compassType,
+    compass_name: compassNameAr
+  });
+};
+
+export const trackCompassCompleted = (
+  compassType: string,
+  compassNameAr: string,
+  primaryPath: string,
+  matchScore: number
+) => {
+  trackConversion('Compass Completed', {
+    compass_type: compassType,
+    compass_name: compassNameAr,
+    primary_path: primaryPath,
+    match_score: matchScore,
+    value: 30.0,
+    currency: 'MAD'
+  });
+
+  // Specific event triggers for granular funnel reporting
+  if (compassType === 'immigration') {
+    trackConversion('Immigration Compass Used', { primary_path: primaryPath, match_score: matchScore });
+  } else if (compassType === 'study') {
+    trackConversion('Study Compass Used', { primary_path: primaryPath, match_score: matchScore });
+  } else if (compassType === 'jobs') {
+    trackConversion('Jobs Compass Used', { primary_path: primaryPath, match_score: matchScore });
+  } else if (compassType === 'career-shift' || compassType === 'shift') {
+    trackConversion('Career Shift Used', { primary_path: primaryPath, match_score: matchScore });
+  } else if (compassType === 'side-hustle') {
+    trackConversion('Side Hustle Used', { primary_path: primaryPath, match_score: matchScore });
+  }
+};
+
+// 7. PDF Download Event
+export const trackPdfDownloaded = (reportType: string, title: string) => {
+  trackConversion('PDF Downloaded', {
+    report_type: reportType,
+    title: title,
+    file_type: 'pdf'
+  });
+};
+
+// 8. WhatsApp Clicked Event
+export const trackWhatsAppClicked = (sourceSection: string, targetNumber?: string) => {
+  trackConversion('WhatsApp Clicked', {
+    source_section: sourceSection,
+    target_number: targetNumber || 'MezdoHub Official'
+  });
+};
+
+// 9. Report Saved to User Account
+export const trackDecisionReportSaved = (compassType: string, title: string) => {
+  trackConversion('Decision Report Saved', {
+    compass_type: compassType,
+    title: title
+  });
+};

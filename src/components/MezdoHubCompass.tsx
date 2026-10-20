@@ -41,7 +41,19 @@ import {
   evaluateCompassResults,
   RecommendationPathway
 } from '../data/compassEngine';
-import { trackPageView } from '../services/analytics';
+import {
+  trackPageView,
+  trackCompassStarted,
+  trackCompassCompleted,
+  trackPdfDownloaded,
+  trackDecisionReportSaved
+} from '../services/analytics';
+import {
+  recordCompassStart,
+  recordCompassCompletion,
+  recordPdfDownload,
+  recordSavedReport
+} from '../services/compassAnalyticsService';
 
 export interface MezdoHubCompassProps {
   initialType?: CompassType;
@@ -208,6 +220,10 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
   const ActiveIcon = activeTabConfig.icon;
 
   const handleSelectCompassUrl = (subTabKey: string) => {
+    const foundConfig = COMPASS_CONFIGS.find(c => c.pathSub === subTabKey);
+    trackCompassStarted(subTabKey, foundConfig?.titleAr || subTabKey);
+    const mappedType = subTabKey === 'shift' ? 'careerShift' : subTabKey === 'side-hustle' ? 'sideHustle' : subTabKey as any;
+    recordCompassStart(mappedType);
     onNavigateToTab?.('compass', subTabKey);
   };
 
@@ -221,6 +237,14 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
       if (activeCompass) {
         const computed = evaluateCompassResults(activeCompass, updated);
         setResult(computed);
+        const mappedType = activeCompass === 'shift' ? 'careerShift' : activeCompass === 'side-hustle' ? 'sideHustle' : activeCompass as any;
+        recordCompassCompletion(mappedType);
+        trackCompassCompleted(
+          activeCompass,
+          activeTabConfig.titleAr,
+          computed.pathways[0]?.titleAr || '',
+          computed.pathways[0]?.matchScore || 90
+        );
       }
     }
     window.scrollTo({ top: 0, behavior: 'instant' });
@@ -238,14 +262,25 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
     if (!result || !activeCompass) return;
     try {
       const existing = JSON.parse(localStorage.getItem('mezdohub_saved_decisions') || '[]');
+      const topP = result.pathways[0];
       const newEntry = {
         id: `decision_${Date.now()}`,
         type: activeCompass,
+        typeNameAr: activeTabConfig.titleAr,
         date: new Date().toISOString(),
-        topPathway: result.pathways[0]?.titleAr || '',
-        matchScore: result.pathways[0]?.matchScore || 0
+        topPathway: topP?.titleAr || '',
+        matchScore: topP?.matchScore || 0,
+        difficulty: topP?.difficulty || '',
+        estimatedCost: topP?.costMAD || '',
+        timeframe: topP?.timeToComplete || '',
+        roadmapPhases: topP?.roadmap || [],
+        checklist: topP?.prerequisitesAr || [],
+        pathways: result.pathways.slice(0, 3),
+        progressCompletedTasks: []
       };
       localStorage.setItem('mezdohub_saved_decisions', JSON.stringify([newEntry, ...existing]));
+      recordSavedReport();
+      trackDecisionReportSaved(activeCompass, result.pathways[0]?.titleAr || '');
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 4000);
     } catch {}
@@ -261,6 +296,11 @@ export const MezdoHubCompass: React.FC<MezdoHubCompassProps> = ({
   };
 
   const handlePrint = () => {
+    if (activeCompass) {
+      const mappedType = activeCompass === 'shift' ? 'careerShift' : activeCompass === 'side-hustle' ? 'sideHustle' : activeCompass as any;
+      recordPdfDownload(mappedType);
+      trackPdfDownloaded(`compass_${activeCompass}`, result?.pathways[0]?.titleAr || 'MezdoHub Decision Report');
+    }
     window.print();
   };
 
