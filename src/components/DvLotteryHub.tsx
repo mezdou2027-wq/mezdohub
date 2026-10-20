@@ -25,6 +25,7 @@ import {
   Printer
 } from 'lucide-react';
 import { trackLeadConversion } from '../services/analytics';
+import { getSiteConfig } from '../services/siteConfig';
 
 interface DvLotteryHubProps {
   onBack?: () => void;
@@ -225,8 +226,12 @@ export const DvLotteryHub: React.FC<DvLotteryHubProps> = ({ onBack, onNavigateTo
   // WhatsApp click-to-chat
   const handleOpenWhatsAppChat = () => {
     if (!submittedReceipt) return;
+    const config = getSiteConfig();
+    const cleanNum = (config.whatsappNumber || '212600000000').replace(/[^0-9]/g, '');
+    const waNumber = cleanNum.startsWith('0') ? '212' + cleanNum.slice(1) : cleanNum;
+
     const msg = `السلام عليكم فريق MezdoHub، قمت بإرسال طلبي لتسجيل القرعة الأمريكية DV-Lottery عبر الموقع.\nرقم الملف المرجعي: ${submittedReceipt.referenceId}\nالاسم: ${submittedReceipt.fullName}\nرقم الهاتف: ${submittedReceipt.phone}\nيرجى تأكيد استلام طلبي وتدقيق صورتي.`;
-    const waUrl = `https://wa.me/212600000000?text=${encodeURIComponent(msg)}`;
+    const waUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`;
     window.open(waUrl, '_blank');
   };
 

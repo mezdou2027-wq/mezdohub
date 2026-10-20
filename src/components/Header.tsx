@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { getSiteConfig, subscribeSiteConfig, SiteConfig } from '../services/siteConfig';
 import { 
   Building2, 
   FileText, 
@@ -48,6 +49,12 @@ export const Header: React.FC<HeaderProps> = ({
   const { user, signOut } = useAuth();
   const isAr = lang === 'ar';
 
+  const [siteConfig, setSiteConfig] = useState<SiteConfig>(() => getSiteConfig());
+
+  useEffect(() => {
+    return subscribeSiteConfig(setSiteConfig);
+  }, []);
+
   const navItems = [
     { id: 'home', labelAr: 'الرئيسية', labelFr: 'Accueil', icon: Compass },
     { id: 'compass', labelAr: 'بوصلة الفرص 🧭', labelFr: 'Boussole MezdoHub 🧭', icon: Compass },
@@ -69,6 +76,25 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="sticky top-0 z-40 border-b transition-colors bg-white/95 dark:bg-[#0A0F1D]/95 backdrop-blur-md border-slate-200 dark:border-slate-800 shadow-2xs">
       
+      {/* 0. Top Dynamic Announcement Bar Controlled by Owner */}
+      {siteConfig.announcementEnabled && siteConfig.announcementText && (
+        <div 
+          onClick={() => {
+            const link = siteConfig.announcementLink || '/dv-lottery';
+            if (link.startsWith('/')) {
+              const clean = link.replace(/^\//, '');
+              setActiveTab(clean || 'home');
+            } else {
+              window.open(link, '_blank');
+            }
+          }}
+          className="bg-gradient-to-r from-amber-500 via-rose-500 to-indigo-600 text-white text-[11px] sm:text-xs font-bold py-1.5 px-4 text-center cursor-pointer hover:opacity-95 transition-opacity flex items-center justify-center gap-2 select-none shadow-xs"
+        >
+          <span>{siteConfig.announcementText}</span>
+          <span className="underline font-black text-[10px] sm:text-[11px] bg-white/20 px-2 py-0.5 rounded-full">اضغط هنا ←</span>
+        </div>
+      )}
+
       {/* 1. Main Navigation Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">

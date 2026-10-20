@@ -57,6 +57,17 @@ const INITIAL_DEMO_USERS: Record<string, UserProfile & { passwordHash: string }>
     emailVerified: true,
     createdAt: new Date().toISOString(),
     passwordHash: 'password123'
+  },
+  'mezdou2027@gmail.com': {
+    id: 'usr_owner_tarek',
+    email: 'mezdou2027@gmail.com',
+    fullName: 'مالك المنصة (طارق مزدوحي - Owner)',
+    role: 'admin',
+    phone: '0600000000',
+    city: 'المغرب',
+    emailVerified: true,
+    createdAt: new Date().toISOString(),
+    passwordHash: '2027'
   }
 };
 
@@ -327,7 +338,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(u);
       localStorage.setItem(LOCAL_STORAGE_SESSION_KEY, JSON.stringify(u));
     } else if (role === 'admin') {
-      const u = INITIAL_DEMO_USERS['admin@mezdohub.ma'];
+      const u = INITIAL_DEMO_USERS['mezdou2027@gmail.com'] || INITIAL_DEMO_USERS['admin@mezdohub.ma'];
       setUser(u);
       localStorage.setItem(LOCAL_STORAGE_SESSION_KEY, JSON.stringify(u));
     }

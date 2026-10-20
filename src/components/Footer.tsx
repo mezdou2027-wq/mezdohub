@@ -125,6 +125,16 @@ export const Footer: React.FC<FooterProps> = ({ onSelectTab, onOpenLegal }) => {
                   {isAr ? 'فحص جاهزية AdSense التقني 🛡️' : 'AdSense Audit Score'}
                 </button>
               </li>
+              <li>
+                <button 
+                  onClick={() => onSelectTab('owner-crm')} 
+                  className="hover:text-amber-400 cursor-pointer text-amber-400 font-black flex items-center gap-1"
+                  title="الدخول للوحة تحكم المالك والإدارة"
+                >
+                  <Lock className="w-3 h-3 text-amber-400" />
+                  <span>{isAr ? 'لوحة تحكم المالك 👑' : 'Espace Propriétaire 👑'}</span>
+                </button>
+              </li>
             </ul>
           </div>
 

@@ -22,7 +22,8 @@ import {
   FileText,
   BadgeAlert
 } from 'lucide-react';
-import { CONTENT_HUB_ARTICLES, ContentArticle } from '../data/contentHubArticles';
+import { ContentArticle } from '../data/contentHubArticles';
+import { getAllArticles } from '../services/articlesService';
 import { updateStructuredData, getArticleSchema, getFaqPageSchema } from '../services/schemaGenerator';
 
 interface ContentHubProps {
@@ -36,9 +37,12 @@ export const ContentHub: React.FC<ContentHubProps> = ({
   onSelectTab, 
   initialArticleId 
 }) => {
+  const [articlesList, setArticlesList] = useState<ContentArticle[]>(() => getAllArticles());
+
   const [selectedArticle, setSelectedArticle] = useState<ContentArticle | null>(() => {
+    const list = getAllArticles();
     if (initialArticleId) {
-      return CONTENT_HUB_ARTICLES.find(a => a.id === initialArticleId || a.slug === initialArticleId) || null;
+      return list.find(a => a.id === initialArticleId || a.slug === initialArticleId) || null;
     }
     return null;
   });
@@ -70,8 +74,17 @@ export const ContentHub: React.FC<ContentHubProps> = ({
     }
   }, [selectedArticle]);
 
+  // Listen to owner article additions, edits or deletions
+  useEffect(() => {
+    const handleArticleChange = () => {
+      setArticlesList(getAllArticles());
+    };
+    window.addEventListener('mezdohub_articles_change', handleArticleChange);
+    return () => window.removeEventListener('mezdohub_articles_change', handleArticleChange);
+  }, []);
+
   // Filter articles
-  const filteredArticles = CONTENT_HUB_ARTICLES.filter(art => {
+  const filteredArticles = articlesList.filter(art => {
     const matchesCat = activeCategory === 'all' || art.category === activeCategory;
     const matchesSearch = searchQuery.trim() === '' || 
       art.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -313,7 +326,7 @@ export const ContentHub: React.FC<ContentHubProps> = ({
               <span>أدلة ومقالات أخرى قد تهمك في نفس المسار:</span>
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {CONTENT_HUB_ARTICLES.filter(a => a.id !== selectedArticle.id).slice(0, 2).map(other => (
+              {articlesList.filter(a => a.id !== selectedArticle.id).slice(0, 2).map(other => (
                 <div
                   key={other.id}
                   onClick={() => {
